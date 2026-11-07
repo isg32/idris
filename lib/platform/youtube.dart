@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
+import 'playlist_scraper.dart';
 import 'quality.dart';
 
 const _newPipe = MethodChannel('idris/youtube');
@@ -71,17 +72,34 @@ Future<YtPlaylist> fetchPlaylist(String idOrUrl) async {
       debugPrint('Playlist lookup failed: $e');
       throw _isNetwork(e) ? PlaylistError.offline : PlaylistError.unavailable;
     }
-    final videos = <YtVideo>[];
-    await for (final v in yt.playlists.getVideos(id)) {
-      final title = v.title.trim();
-      if (title == '[Deleted video]' || title == '[Private video]') continue;
-      videos.add(
-        YtVideo(
-          id: v.id.value,
-          title: title,
-          channel: v.author,
-          duration: v.duration ?? Duration.zero,
-        ),
+    // Idris's own reader first (it knows YouTube's current page format),
+    // then youtube_explode's.
+    var found = <YtVideo>[];
+    try {
+      found = await PlaylistScraper().videos(id);
+    } on Object catch (e) {
+      debugPrint('Playlist reader failed, trying youtube_explode: $e');
+    }
+    if (found.isEmpty) {
+      await for (final v in yt.playlists.getVideos(id)) {
+        found.add(
+          YtVideo(
+            id: v.id.value,
+            title: v.title,
+            channel: v.author,
+            duration: v.duration ?? Duration.zero,
+          ),
+        );
+      }
+    }
+    final videos = [
+      for (final v in found)
+        if (!_unplayable.contains(v.title.trim())) v,
+    ];
+    if (videos.isEmpty && (meta.videoCount ?? 0) > 0) {
+      throw const PlaylistError(
+        'YouTube says this playlist has videos, but Idris couldn\'t read '
+        'them. Try again in a moment.',
       );
     }
     return YtPlaylist(
@@ -94,6 +112,9 @@ Future<YtPlaylist> fetchPlaylist(String idOrUrl) async {
     yt.close();
   }
 }
+
+/// Titles YouTube gives videos that can't be played.
+const _unplayable = {'[Deleted video]', '[Private video]'};
 
 bool _isNetwork(Object e) {
   final s = e.toString();
