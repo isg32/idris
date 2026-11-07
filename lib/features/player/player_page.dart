@@ -14,6 +14,7 @@ import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/providers.dart';
+import '../../platform/playback_rules.dart';
 import 'player_sheets.dart';
 
 /// The full-screen player. Back keeps playing (Home shows "Now playing");
@@ -149,11 +150,11 @@ class PlayerPage extends ConsumerWidget {
                       ),
                       const SizedBox(width: 28),
                       Opacity(
-                        opacity: s.hasNext ? 1 : VColors.disabledOpacity,
+                        opacity: s.canSkip ? 1 : VColors.disabledOpacity,
                         child: VCircleButton(
                           icon: VIcon.next,
                           size: 56,
-                          onTap: s.hasNext
+                          onTap: s.canSkip
                               ? () => unawaited(handler.skipToNext())
                               : null,
                         ),
@@ -165,14 +166,18 @@ class PlayerPage extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _Mode(
-                        label: 'Loop one',
-                        icon: VIcon.loop,
-                        on: s.loopOne,
-                        onTap: () => handler.setLoopOne(!s.loopOne),
+                        label: switch (s.loop) {
+                          Loop.off => 'Loop',
+                          Loop.all => 'Playlist',
+                          Loop.one => 'This one',
+                        },
+                        icon: s.loop == Loop.one ? VIcon.loop : VIcon.loopAll,
+                        on: s.loop != Loop.off,
+                        onTap: handler.cycleLoop,
                       ),
                       _Mode(
                         label: 'Repeat',
-                        icon: VIcon.loop,
+                        icon: VIcon.repeatCount,
                         text: s.repeatTarget == null
                             ? null
                             : '×${s.repeatTarget}',

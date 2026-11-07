@@ -127,14 +127,14 @@ void main() {
   group('afterTrackEnds', () {
     AfterTrack run({
       bool sleepAtEnd = false,
-      bool loopOne = false,
+      Loop loop = Loop.off,
       int? target,
       int done = 1,
       RepeatEnd end = RepeatEnd.next,
       bool hasNext = true,
     }) => afterTrackEnds(
       sleepAtEnd: sleepAtEnd,
-      loopOne: loopOne,
+      loop: loop,
       repeatTarget: target,
       repeatDone: done,
       repeatEnd: end,
@@ -146,7 +146,22 @@ void main() {
       expect(run(hasNext: false), AfterTrack.stop);
     });
     test('loop one replays forever', () {
-      expect(run(loopOne: true, hasNext: false), AfterTrack.replay);
+      expect(run(loop: Loop.one, hasNext: false), AfterTrack.replay);
+    });
+    test('loop all goes back to the first track after the last', () {
+      expect(run(loop: Loop.all), AfterTrack.next);
+      expect(run(loop: Loop.all, hasNext: false), AfterTrack.wrap);
+    });
+    test('a finished repeat count on the last track wraps when looping', () {
+      expect(
+        run(target: 3, done: 3, loop: Loop.all, hasNext: false),
+        AfterTrack.wrap,
+      );
+    });
+    test('the loop button cycles off, all, one', () {
+      expect(Loop.off.next, Loop.all);
+      expect(Loop.all.next, Loop.one);
+      expect(Loop.one.next, Loop.off);
     });
     test('a repeat count of 3 plays three times, then moves on', () {
       expect(run(target: 3, done: 1), AfterTrack.replay);
@@ -158,7 +173,7 @@ void main() {
     });
     test('sleep at end of track beats everything', () {
       expect(
-        run(sleepAtEnd: true, loopOne: true, target: 108),
+        run(sleepAtEnd: true, loop: Loop.one, target: 108),
         AfterTrack.stop,
       );
     });

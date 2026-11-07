@@ -21,7 +21,7 @@ class SessionState {
     this.problem,
     this.cached = false,
     this.kbps = 0,
-    this.loopOne = false,
+    this.loop = Loop.off,
     this.repeatTarget,
     this.repeatDone = 0,
     this.repeatEnd = RepeatEnd.next,
@@ -46,7 +46,7 @@ class SessionState {
   final bool cached;
   final int kbps;
 
-  final bool loopOne;
+  final Loop loop;
 
   /// Repeat this track N times; null when off.
   final int? repeatTarget;
@@ -62,6 +62,9 @@ class SessionState {
   bool get active => queue.isNotEmpty;
   Track? get current => index < queue.length ? queue[index] : null;
   bool get hasNext => index + 1 < queue.length;
+
+  /// Next is possible: another track, or the first again when looping.
+  bool get canSkip => hasNext || (loop == Loop.all && queue.length > 1);
   List<Track> get upNext =>
       index + 1 < queue.length ? queue.sublist(index + 1) : const [];
 
@@ -73,7 +76,7 @@ class SessionState {
     String? Function()? problem,
     bool? cached,
     int? kbps,
-    bool? loopOne,
+    Loop? loop,
     int? Function()? repeatTarget,
     int? repeatDone,
     RepeatEnd? repeatEnd,
@@ -88,7 +91,7 @@ class SessionState {
     problem: problem != null ? problem() : this.problem,
     cached: cached ?? this.cached,
     kbps: kbps ?? this.kbps,
-    loopOne: loopOne ?? this.loopOne,
+    loop: loop ?? this.loop,
     repeatTarget: repeatTarget != null ? repeatTarget() : this.repeatTarget,
     repeatDone: repeatDone ?? this.repeatDone,
     repeatEnd: repeatEnd ?? this.repeatEnd,
@@ -260,7 +263,7 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
       final done = _s.repeatDone;
       final next = afterTrackEnds(
         sleepAtEnd: _s.sleepAtEndOfTrack,
-        loopOne: _s.loopOne,
+        loop: _s.loop,
         repeatTarget: _s.repeatTarget,
         repeatDone: done,
         repeatEnd: _s.repeatEnd,
@@ -268,7 +271,7 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
       );
       switch (next) {
         case AfterTrack.replay:
-          if (_s.repeatTarget != null && !_s.loopOne) {
+          if (_s.repeatTarget != null && _s.loop != Loop.one) {
             _s = _s.copyWith(repeatDone: done + 1);
           }
           await player.seek(Duration.zero);
@@ -280,6 +283,9 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
             repeatTarget: () => null,
             repeatDone: 0,
           );
+          await _open();
+        case AfterTrack.wrap:
+          _s = _s.copyWith(index: 0, repeatTarget: () => null, repeatDone: 0);
           await _open();
         case AfterTrack.stop:
           await player.pause();
@@ -329,9 +335,9 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> skipToNext() async {
-    if (!_s.hasNext) return;
+    if (!_s.canSkip) return;
     _s = _s.copyWith(
-      index: _s.index + 1,
+      index: _s.hasNext ? _s.index + 1 : 0,
       repeatTarget: () => null,
       repeatDone: 0,
     );
@@ -358,7 +364,8 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
     await super.stop();
   }
 
-  void setLoopOne(bool on) => _s = _s.copyWith(loopOne: on);
+  /// Off → loop the playlist → loop this track → off.
+  void cycleLoop() => _s = _s.copyWith(loop: _s.loop.next);
 
   /// Repeats the current track [times] in all (null turns it off).
   void setRepeat(int? times, {RepeatEnd? end}) => _s = _s.copyWith(
@@ -465,7 +472,7 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
     controls: [
       MediaControl.skipToPrevious,
       if (player.playing) MediaControl.pause else MediaControl.play,
-      if (_s.hasNext) MediaControl.skipToNext,
+      if (_s.canSkip) MediaControl.skipToNext,
       MediaControl.stop,
     ],
     systemActions: const {
@@ -473,7 +480,7 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
       MediaAction.seekForward,
       MediaAction.seekBackward,
     },
-    androidCompactActionIndices: _s.hasNext ? const [0, 1, 2] : const [0, 1],
+    androidCompactActionIndices: _s.canSkip ? const [0, 1, 2] : const [0, 1],
     processingState: _s.loading
         ? AudioProcessingState.loading
         : switch (player.processingState) {
