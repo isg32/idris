@@ -22,6 +22,8 @@
 
 ## Why Idris
 
+> Idris is a last name of someone who belongs to my heart, a very dear person to me. it was tragic but well, here we are.
+
 YouTube is where the chants, mantras and calm music live, but opening YouTube means recommendations, Shorts and comments. Idris plays **only the playlists you give it**, as audio, in a quiet black-and-white app.
 
 Paste a playlist link once. Idris keeps it in sync, and every track it plays is kept on the phone, so the next play starts instantly and works without a network.
