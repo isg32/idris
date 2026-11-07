@@ -29,5 +29,6 @@ class VPalette {
 
   Color get glassBar => isDark ? VColors.glassBar : VColors.glassBarLight;
   Color get glassCard => isDark ? VColors.glassCard : VColors.glassCardLight;
+  Color get artScrim => isDark ? VColors.artScrim : VColors.artScrimLight;
   Color get glassSheet => isDark ? VColors.glassSheet : VColors.glassSheetLight;
 }

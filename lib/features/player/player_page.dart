@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,12 +10,15 @@ import 'package:just_audio/just_audio.dart';
 import '../../core/format.dart';
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_colors.dart';
+import '../../core/theme/v_palette.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/theme/v_tokens.dart';
 import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_surface.dart';
+import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../../platform/audio_handler.dart';
 import '../../platform/playback_rules.dart';
 import 'player_sheets.dart';
 
@@ -41,181 +46,224 @@ class PlayerPage extends ConsumerWidget {
 
     final eyebrow = [
       if (s.source.isNotEmpty) s.source,
-      if (s.loading) 'Opening' else ...[
+      if (s.loading)
+        'Opening'
+      else ...[
         if (s.kbps > 0) '${s.kbps} kbps',
         if (s.cached) 'Cached' else 'Streaming',
       ],
     ].join(' · ').toUpperCase();
 
+    final art = t == null ? null : ref.watch(artworkProvider(t.videoId)).value;
+
     return CupertinoPageScaffold(
       backgroundColor: VInk.surfaceOf(context),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, top + 12, 20, bottom + 24),
-        child: t == null
-            ? _Ended(onBack: () => context.pop())
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      VTappable(
-                        onTap: () => context.pop(),
-                        child: Row(
-                          children: [
-                            const VIconView(VIcon.down, size: 16),
-                            const SizedBox(width: 4),
-                            Text('Back', style: VText.inter(14)),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${s.index + 1} OF ${s.queue.length}',
-                        style: VText.eyebrow,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 36),
-                  Text(eyebrow, style: VText.eyebrow),
-                  const SizedBox(height: 10),
-                  Text(
-                    t.title,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: VText.inter(28, weight: 300, height: 1.2),
-                  ),
-                  if (t.channel.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(t.channel, style: VText.inter(13, weight: 300)),
-                  ],
-                  const SizedBox(height: 32),
-                  Text(
-                    _clock(s.loading ? Duration.zero : pos),
-                    style: VText.doto(56, weight: 900, height: 1),
-                  ),
-                  const SizedBox(height: 12),
-                  _SeekBar(
-                    position: pos,
-                    duration: dur,
-                    onSeek: (d) => unawaited(handler.seek(d)),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    s.loading
-                        ? 'Opening…'
-                        : buffering
-                        ? 'Buffering…'
-                        : dur == null
-                        ? ''
-                        : 'of ${VFormat.clock(dur)}',
-                    style: VText.secondary,
-                  ),
-                  if (s.problem != null) ...[
-                    const SizedBox(height: 18),
-                    VCard(
-                      outline: VOutline.dashed,
-                      child: Text(
-                        s.problem!,
-                        style: VText.inter(15, weight: 500),
+      child: Stack(
+        children: [
+          if (art != null) Positioned.fill(child: _Backdrop(art)),
+          Positioned.fill(
+            child: _content(
+              context,
+              ref,
+              s,
+              handler,
+              t,
+              playing,
+              pos,
+              dur,
+              buffering,
+              top,
+              bottom,
+              eyebrow,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _content(
+    BuildContext context,
+    WidgetRef ref,
+    SessionState s,
+    IdrisAudioHandler handler,
+    Track? t,
+    bool playing,
+    Duration pos,
+    Duration? dur,
+    bool buffering,
+    double top,
+    double bottom,
+    String eyebrow,
+  ) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, top + 12, 20, bottom + 24),
+      child: t == null
+          ? _Ended(onBack: () => context.pop())
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    VTappable(
+                      onTap: () => context.pop(),
+                      child: Row(
+                        children: [
+                          const VIconView(VIcon.down, size: 16),
+                          const SizedBox(width: 4),
+                          Text('Back', style: VText.inter(14)),
+                        ],
                       ),
                     ),
-                  ] else if (s.repeatTarget != null) ...[
-                    const SizedBox(height: 22),
-                    _RepeatCounter(
-                      done: s.repeatDone,
-                      target: s.repeatTarget!,
-                      then: s.repeatEnd.name == 'stop' ? 'then stop' : 'then next track',
+                    const Spacer(),
+                    Text(
+                      '${s.index + 1} OF ${s.queue.length}',
+                      style: VText.eyebrow,
                     ),
                   ],
-                  const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      VCircleButton(
-                        icon: VIcon.previous,
-                        size: 56,
-                        onTap: () => unawaited(handler.skipToPrevious()),
-                      ),
-                      const SizedBox(width: 28),
-                      Opacity(
-                        opacity: s.loading ? VColors.disabledOpacity : 1,
-                        child: VCircleButton(
-                          icon: playing ? VIcon.pause : VIcon.play,
-                          filled: true,
-                          size: 84,
-                          onTap: s.loading
-                              ? null
-                              : () => unawaited(handler.toggle()),
-                        ),
-                      ),
-                      const SizedBox(width: 28),
-                      Opacity(
-                        opacity: s.canSkip ? 1 : VColors.disabledOpacity,
-                        child: VCircleButton(
-                          icon: VIcon.next,
-                          size: 56,
-                          onTap: s.canSkip
-                              ? () => unawaited(handler.skipToNext())
-                              : null,
-                        ),
-                      ),
-                    ],
+                ),
+                const SizedBox(height: 36),
+                Text(eyebrow, style: VText.eyebrow),
+                const SizedBox(height: 10),
+                Text(
+                  t.title,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: VText.inter(28, weight: 300, height: 1.2),
+                ),
+                if (t.channel.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(t.channel, style: VText.inter(13, weight: 300)),
+                ],
+                const SizedBox(height: 32),
+                Text(
+                  _clock(s.loading ? Duration.zero : pos),
+                  style: VText.doto(56, weight: 900, height: 1),
+                ),
+                const SizedBox(height: 12),
+                _SeekBar(
+                  position: pos,
+                  duration: dur,
+                  onSeek: (d) => unawaited(handler.seek(d)),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  s.loading
+                      ? 'Opening…'
+                      : buffering
+                      ? 'Buffering…'
+                      : dur == null
+                      ? ''
+                      : 'of ${VFormat.clock(dur)}',
+                  style: VText.secondary,
+                ),
+                if (s.problem != null) ...[
+                  const SizedBox(height: 18),
+                  VCard(
+                    outline: VOutline.dashed,
+                    child: Text(
+                      s.problem!,
+                      style: VText.inter(15, weight: 500),
+                    ),
                   ),
-                  const SizedBox(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _Mode(
-                        label: switch (s.loop) {
-                          Loop.off => 'Loop',
-                          Loop.all => 'Playlist',
-                          Loop.one => 'This one',
-                        },
-                        icon: s.loop == Loop.one ? VIcon.loop : VIcon.loopAll,
-                        on: s.loop != Loop.off,
-                        onTap: handler.cycleLoop,
-                      ),
-                      _Mode(
-                        label: 'Repeat',
-                        icon: VIcon.repeatCount,
-                        text: s.repeatTarget == null
-                            ? null
-                            : '×${s.repeatTarget}',
-                        on: s.repeatTarget != null,
-                        onTap: () => showRepeatSheet(context, ref),
-                      ),
-                      _Mode(
-                        label: 'Sleep',
-                        icon: VIcon.timer,
-                        text: _sleepText(s.sleepEndsAt, s.sleepAtEndOfTrack),
-                        on: s.sleepEndsAt != null || s.sleepAtEndOfTrack,
-                        onTap: () => showSleepSheet(context, ref),
-                      ),
-                      _Mode(
-                        label: 'Shuffle',
-                        icon: VIcon.shuffle,
-                        on: s.shuffle,
-                        onTap: () => handler.setShuffle(!s.shuffle),
-                      ),
-                      _Mode(
-                        label: 'Queue',
-                        icon: VIcon.queue,
-                        on: false,
-                        onTap: () => showQueueSheet(context, ref),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 28),
-                  VButton.ghost(
-                    'Stop session',
-                    onPressed: () async {
-                      await handler.stop();
-                      if (context.mounted) context.pop();
-                    },
+                ] else if (s.repeatTarget != null) ...[
+                  const SizedBox(height: 22),
+                  _RepeatCounter(
+                    done: s.repeatDone,
+                    target: s.repeatTarget!,
+                    then: s.repeatEnd.name == 'stop'
+                        ? 'then stop'
+                        : 'then next track',
                   ),
                 ],
-              ),
-      ),
+                const Spacer(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    VCircleButton(
+                      icon: VIcon.previous,
+                      size: 56,
+                      onTap: () => unawaited(handler.skipToPrevious()),
+                    ),
+                    const SizedBox(width: 28),
+                    Opacity(
+                      opacity: s.loading ? VColors.disabledOpacity : 1,
+                      child: VCircleButton(
+                        icon: playing ? VIcon.pause : VIcon.play,
+                        filled: true,
+                        size: 84,
+                        onTap: s.loading
+                            ? null
+                            : () => unawaited(handler.toggle()),
+                      ),
+                    ),
+                    const SizedBox(width: 28),
+                    Opacity(
+                      opacity: s.canSkip ? 1 : VColors.disabledOpacity,
+                      child: VCircleButton(
+                        icon: VIcon.next,
+                        size: 56,
+                        onTap: s.canSkip
+                            ? () => unawaited(handler.skipToNext())
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _Mode(
+                      label: switch (s.loop) {
+                        Loop.off => 'Loop',
+                        Loop.all => 'Playlist',
+                        Loop.one => 'This one',
+                      },
+                      icon: s.loop == Loop.one ? VIcon.loop : VIcon.loopAll,
+                      on: s.loop != Loop.off,
+                      onTap: handler.cycleLoop,
+                    ),
+                    _Mode(
+                      label: 'Repeat',
+                      icon: VIcon.repeatCount,
+                      text: s.repeatTarget == null
+                          ? null
+                          : '×${s.repeatTarget}',
+                      on: s.repeatTarget != null,
+                      onTap: () => showRepeatSheet(context, ref),
+                    ),
+                    _Mode(
+                      label: 'Sleep',
+                      icon: VIcon.timer,
+                      text: _sleepText(s.sleepEndsAt, s.sleepAtEndOfTrack),
+                      on: s.sleepEndsAt != null || s.sleepAtEndOfTrack,
+                      onTap: () => showSleepSheet(context, ref),
+                    ),
+                    _Mode(
+                      label: 'Shuffle',
+                      icon: VIcon.shuffle,
+                      on: s.shuffle,
+                      onTap: () => handler.setShuffle(!s.shuffle),
+                    ),
+                    _Mode(
+                      label: 'Queue',
+                      icon: VIcon.queue,
+                      on: false,
+                      onTap: () => showQueueSheet(context, ref),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+                VButton.ghost(
+                  'Stop session',
+                  onPressed: () async {
+                    await handler.stop();
+                    if (context.mounted) context.pop();
+                  },
+                ),
+              ],
+            ),
     );
   }
 
@@ -232,6 +280,32 @@ class PlayerPage extends ConsumerWidget {
     final left = ends.difference(DateTime.now());
     if (left.inMinutes >= 1) return '${left.inMinutes}m';
     return '${left.inSeconds.clamp(0, 59)}s';
+  }
+}
+
+/// The track's thumbnail, blurred to colour and light only, under a veil
+/// so the ink stays readable (Settings → Artwork).
+class _Backdrop extends StatelessWidget {
+  const _Backdrop(this.file);
+
+  final File file;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+          child: Transform.scale(
+            // Bigger than the screen so the blur has no soft edges.
+            scale: 1.4,
+            child: Image.file(file, fit: BoxFit.cover, gaplessPlayback: true),
+          ),
+        ),
+        ColoredBox(color: VPalette.of(context).artScrim),
+      ],
+    );
   }
 }
 
@@ -334,17 +408,11 @@ class _Mode extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: text != null
-                  ? Text(
-                      text!,
-                      style: VText.doto(15).copyWith(color: fg),
-                    )
+                  ? Text(text!, style: VText.doto(15).copyWith(color: fg))
                   : VIconView(icon, color: fg),
             ),
             const SizedBox(height: 6),
-            Text(
-              label,
-              style: VText.inter(11, weight: on ? 600 : 500),
-            ),
+            Text(label, style: VText.inter(11, weight: on ? 600 : 500)),
           ],
         ),
       ),

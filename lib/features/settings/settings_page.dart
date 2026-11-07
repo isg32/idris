@@ -156,6 +156,22 @@ class SettingsPage extends ConsumerWidget {
           ],
         ),
 
+        const SectionHeading('Look'),
+        VListSection(
+          children: [
+            VListRow(
+              title: 'Artwork (experimental)',
+              subtitle:
+                  'YouTube thumbnails in the mini player and on Home, '
+                  'blurred behind the player. Off keeps Idris black and white.',
+              trailing: VSwitch(
+                value: s.artwork,
+                onChanged: (v) => set('artwork', '$v'),
+              ),
+            ),
+          ],
+        ),
+
         if (glyph) ...[
           const SectionHeading('Glyph'),
           VListSection(

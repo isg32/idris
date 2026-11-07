@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -108,6 +109,14 @@ final trackCacheStateProvider = Provider.family<TrackCacheState, String>((
   }
   if (caching) return TrackCacheState.caching;
   return TrackCacheState.streams;
+});
+
+/// A track's artwork, when Settings → Artwork is on: the saved thumbnail,
+/// else none (the waveform tile shows instead).
+final artworkProvider = FutureProvider.family<File?, String>((ref, videoId) {
+  final on = ref.watch(settingsProvider).value?.artwork ?? true;
+  if (!on) return Future.value();
+  return ref.watch(cacheManagerProvider).artwork(videoId);
 });
 
 // ------------------------------------------------------------------ network

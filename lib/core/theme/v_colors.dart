@@ -30,6 +30,14 @@ abstract final class VColors {
   /// Light mode: bottom sheet is white at 60 %.
   static const Color glassSheetLight = Color(0x99FFFFFF);
 
+  /// Veil over the blurred artwork behind the player (Settings → Artwork,
+  /// experimental): black at 40 %, so white ink stays readable on any
+  /// thumbnail. The artwork itself is the one place colour comes in.
+  static const Color artScrim = Color(0x66000000);
+
+  /// Light mode: white at 55 %.
+  static const Color artScrimLight = Color(0x8CFFFFFF);
+
   /// Opacity of a disabled primary action.
   static const double disabledOpacity = 0.35;
 

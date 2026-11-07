@@ -70,6 +70,7 @@ class Settings {
     this.glyph = false,
     this.repeatEnd = RepeatEnd.next,
     this.syncOnOpen = true,
+    this.artwork = true,
   });
 
   static const int defaultCacheLimitGb = 5;
@@ -86,6 +87,10 @@ class Settings {
   final RepeatEnd repeatEnd;
   final bool syncOnOpen;
 
+  /// Show YouTube thumbnails (blurred behind the player, in the mini
+  /// player). Experimental: brings colour into a black-and-white app.
+  final bool artwork;
+
   int? get cacheLimitBytes =>
       cacheLimitGb == 0 ? null : cacheLimitGb * 1024 * 1024 * 1024;
 
@@ -97,6 +102,7 @@ class Settings {
     glyph: p['glyph'] == 'true',
     repeatEnd: p['repeatEnd'] == 'stop' ? RepeatEnd.stop : RepeatEnd.next,
     syncOnOpen: p['syncOnOpen'] != 'false',
+    artwork: p['artwork'] != 'false',
   );
 }
 

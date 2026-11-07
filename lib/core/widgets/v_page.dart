@@ -82,6 +82,20 @@ class VBackLink extends StatelessWidget {
   }
 }
 
+/// Extra room at the bottom of pages for something floating over them
+/// (the mini player), set by the shell or a page that shows one.
+class VBottomInset extends InheritedWidget {
+  const VBottomInset({super.key, required this.extra, required super.child});
+
+  final double extra;
+
+  static double of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<VBottomInset>()?.extra ?? 0;
+
+  @override
+  bool updateShouldNotify(VBottomInset old) => old.extra != extra;
+}
+
 /// Frame for a tab page: title, then scrolling content that clears the
 /// floating tab bar.
 class VTabPage extends StatelessWidget {
@@ -136,11 +150,11 @@ class VTabPage extends StatelessWidget {
                 ),
               ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 VSpace.gutter,
                 0,
                 VSpace.gutter,
-                VSpace.tabBarClearance,
+                VSpace.tabBarClearance + VBottomInset.of(context),
               ),
               sliver: SliverList.list(children: _gapped(children)),
             ),
@@ -204,11 +218,11 @@ class VDetailPage extends StatelessWidget {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 VSpace.gutter,
                 0,
                 VSpace.gutter,
-                40,
+                40 + VBottomInset.of(context),
               ),
               sliver: SliverList.list(children: _gapped(children)),
             ),

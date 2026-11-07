@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/icons/v_icons.dart';
@@ -9,6 +10,9 @@ import '../core/widgets/v_ink.dart';
 import '../core/theme/v_text.dart';
 import '../core/theme/v_tokens.dart';
 import '../core/widgets/v_glass.dart';
+import '../core/widgets/v_page.dart';
+import '../data/providers.dart';
+import '../features/player/mini_player.dart';
 
 /// The three tabs with the floating glass tab bar over them.
 ///
@@ -66,7 +70,15 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final shell = widget.shell;
     final bottom = MediaQuery.paddingOf(context).bottom;
+    return Consumer(
+      builder: (context, ref, _) {
+        final mini = ref.watch(sessionProvider.select((s) => s.active));
+        return _build(shell, bottom, mini ? miniPlayerHeight + 10 : 0.0);
+      },
+    );
+  }
 
+  Widget _build(StatefulNavigationShell shell, double bottom, double mini) {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -74,7 +86,9 @@ class _AppShellState extends State<AppShell> {
       },
       child: Stack(
         children: [
-          Positioned.fill(child: shell),
+          Positioned.fill(
+            child: VBottomInset(extra: mini, child: shell),
+          ),
           // Content scrolling under the floating tab bar softens into a blur
           // that is strongest at the bottom edge.
           Positioned(
@@ -83,14 +97,14 @@ class _AppShellState extends State<AppShell> {
             bottom: 0,
             child: VEdgeBlur(
               edge: VEdge.bottom,
-              solid: bottom + 22 + 62,
+              solid: bottom + 22 + 62 + mini,
               fade: 32,
             ),
           ),
           Positioned(
             left: 0,
             right: 0,
-            bottom: bottom + 22 + 62 + 12,
+            bottom: bottom + 22 + 62 + 12 + mini,
             child: IgnorePointer(
               child: Center(
                 child: AnimatedOpacity(
@@ -117,6 +131,13 @@ class _AppShellState extends State<AppShell> {
               ),
             ),
           ),
+          if (mini > 0)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: bottom + 22 + 62 + 10,
+              child: const MiniPlayer(),
+            ),
           Positioned(
             left: 0,
             right: 0,

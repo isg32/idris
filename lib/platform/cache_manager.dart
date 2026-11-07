@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import '../data/db/database.dart';
 import '../data/library.dart';
 import 'cache_download.dart';
+import 'net.dart';
 import 'quality.dart';
 import 'youtube.dart';
 
@@ -265,6 +266,39 @@ class CacheManager {
     );
   }
 
+  // -------------------------------------------------------------- artwork
+
+  final Map<String, Future<File?>> _art = {};
+
+  /// The video's thumbnail as a file beside its audio, fetched once, so
+  /// artwork shows offline too. Null when it can't be had.
+  Future<File?> artwork(String videoId) => _art[videoId] ??= _fetchArt(videoId);
+
+  Future<File?> _fetchArt(String videoId) async {
+    final f = File(p.join((await dir).path, '$videoId.jpg'));
+    if (f.existsSync() && f.lengthSync() > 0) return f;
+    final client = youtubeHttpClient();
+    try {
+      final req = await client.getUrl(thumbnailUrl(videoId, small: true));
+      final res = await req.close();
+      if (res.statusCode != HttpStatus.ok) {
+        await res.drain<void>();
+        _art.remove(videoId)?.ignore();
+        return null;
+      }
+      final tmp = File('${f.path}.part');
+      await res.pipe(tmp.openWrite());
+      await tmp.rename(f.path);
+      return f;
+    } on Object catch (e) {
+      debugPrint('Artwork for $videoId failed: $e');
+      _art.remove(videoId)?.ignore();
+      return null;
+    } finally {
+      client.close();
+    }
+  }
+
   // ------------------------------------------------------------ pre-cache
 
   /// Looks for pinned tracks to fetch, if the network allows.
@@ -356,6 +390,9 @@ class CacheManager {
     final e = await library.cacheEntry(videoId);
     if (e != null) await _deleteFiles(e.path);
     await library.deleteCache(videoId);
+    _art.remove(videoId)?.ignore();
+    final art = File(p.join((await dir).path, '$videoId.jpg'));
+    if (art.existsSync()) await art.delete();
     _publishProgress();
   }
 

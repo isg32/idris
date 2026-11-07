@@ -240,6 +240,8 @@ Future<(ResolvedAudio, int)> resolveAudio(
 Uri watchUrl(String videoId) =>
     Uri.parse('https://www.youtube.com/watch?v=$videoId');
 
-/// The video's thumbnail (lock-screen artwork).
-Uri thumbnailUrl(String videoId) =>
-    Uri.parse('https://i.ytimg.com/vi/$videoId/hqdefault.jpg');
+/// The video's thumbnail. [small] is the 320×180 one with no letterbox
+/// bars (in-app artwork); else 480×360 (lock screen).
+Uri thumbnailUrl(String videoId, {bool small = false}) => Uri.parse(
+  'https://i.ytimg.com/vi/$videoId/${small ? 'mqdefault' : 'hqdefault'}.jpg',
+);

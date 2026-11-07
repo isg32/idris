@@ -2,15 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../app/router.dart';
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/theme/v_tokens.dart';
 import '../../core/widgets/v_buttons.dart';
-import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_list.dart';
 import '../../core/widgets/v_page.dart';
 import '../../core/widgets/v_surface.dart';
@@ -29,7 +26,6 @@ class HomePage extends ConsumerWidget {
     final added = ref.watch(recentlyAddedProvider).value ?? const [];
     final played = ref.watch(recentlyPlayedProvider).value ?? const [];
     final lastSync = ref.watch(lastSyncProvider);
-    final session = ref.watch(sessionProvider);
 
     Future<void> refresh() async {
       final r = await ref.read(syncProvider)();
@@ -46,12 +42,9 @@ class HomePage extends ConsumerWidget {
           : VCircleButton(icon: VIcon.sync, onTap: () => unawaited(refresh())),
       children: [
         const OfflineBanner(),
-        if (session.active) const _NowPlaying(),
         if (empty) const _Empty(),
         if (lastSync != null && lastSync.added > 0)
-          VFootnote(
-            'Synced · ${lastSync.added} new',
-          ),
+          VFootnote('Synced · ${lastSync.added} new'),
         if (added.isNotEmpty) ...[
           SectionHeading(
             'Recently added',
@@ -113,85 +106,6 @@ Future<void> _playFromPlaylist(
   );
 }
 
-class _NowPlaying extends ConsumerWidget {
-  const _NowPlaying();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.watch(sessionProvider);
-    final t = s.current;
-    if (t == null) return const SizedBox.shrink();
-    final playing = ref.watch(playingProvider).value ?? false;
-    final pos = ref.watch(positionProvider).value ?? Duration.zero;
-    final dur = ref.watch(durationProvider).value;
-    final value = dur == null || dur.inMilliseconds == 0
-        ? 0.0
-        : pos.inMilliseconds / dur.inMilliseconds;
-    final eyebrow = s.repeatTarget != null
-        ? 'Now playing · ${s.repeatDone} / ${s.repeatTarget}'
-        : 'Now playing';
-    return VCard(
-      inverted: true,
-      padding: const EdgeInsets.all(14),
-      onTap: () => context.push(Routes.player),
-      child: Builder(
-        builder: (context) => Row(
-          children: [
-            const ThumbTile(size: 48, radius: 12),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(eyebrow.toUpperCase(), style: VText.eyebrow),
-                  const SizedBox(height: 4),
-                  Text(
-                    t.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: VText.rowTitle,
-                  ),
-                  const SizedBox(height: 6),
-                  _ThinBar(value: value.clamp(0, 1)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            VCircleButton(
-              icon: playing ? VIcon.pause : VIcon.play,
-              filled: true,
-              onTap: () => unawaited(ref.read(audioHandlerProvider).toggle()),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ThinBar extends StatelessWidget {
-  const _ThinBar({required this.value});
-
-  final double value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ink = VInk.of(context);
-    return Container(
-      height: 4,
-      decoration: BoxDecoration(
-        border: Border.all(color: ink),
-        borderRadius: BorderRadius.circular(2),
-      ),
-      alignment: Alignment.centerLeft,
-      child: FractionallySizedBox(
-        widthFactor: value,
-        child: ColoredBox(color: ink),
-      ),
-    );
-  }
-}
-
 class _AddedStrip extends ConsumerWidget {
   const _AddedStrip({required this.items});
 
@@ -221,10 +135,20 @@ class _AddedStrip extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ThumbTile(
-                    size: 132,
-                    radius: VRadius.card,
-                    badge: item.isNew ? 'NEW' : null,
+                  Stack(
+                    children: [
+                      TrackArt(
+                        item.track.videoId,
+                        size: 132,
+                        radius: VRadius.card,
+                      ),
+                      if (item.isNew)
+                        const Positioned(
+                          top: 10,
+                          left: 10,
+                          child: VPill.badge('NEW'),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(

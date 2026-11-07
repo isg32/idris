@@ -10,6 +10,7 @@ import '../../core/widgets/v_progress.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/providers.dart';
 import '../common.dart';
+import '../player/mini_player.dart';
 
 /// One playlist: play, shuffle, keep offline, and its tracks.
 class PlaylistPage extends ConsumerWidget {
@@ -38,7 +39,9 @@ class PlaylistPage extends ConsumerWidget {
         : '$cached of ${tracks.length} cached'
               '${playlist.pinned && waiting != null ? ' · $waiting' : ''}';
 
-    return VDetailPage(
+    final mini = ref.watch(sessionProvider.select((s) => s.active));
+    final bottom = MediaQuery.paddingOf(context).bottom;
+    final page = VDetailPage(
       backLabel: 'Library',
       title: playlist.title,
       onRefresh: () async => ref.read(syncOneProvider)(id),
@@ -96,9 +99,7 @@ class PlaylistPage extends ConsumerWidget {
                   VSwitch(
                     value: playlist.pinned,
                     onChanged: (v) async {
-                      await ref
-                          .read(libraryProvider)
-                          .setPlaylistPinned(id, v);
+                      await ref.read(libraryProvider).setPlaylistPinned(id, v);
                       ref.read(cacheManagerProvider).kick();
                     },
                   ),
@@ -127,16 +128,24 @@ class PlaylistPage extends ConsumerWidget {
                     index: i,
                     source: playlist.title,
                   ),
-                  onLongPress: () => showTrackActions(
-                    context,
-                    ref,
-                    t,
-                    source: playlist.title,
-                  ),
+                  onLongPress: () =>
+                      showTrackActions(context, ref, t, source: playlist.title),
                 ),
             ],
           ),
         const VFootnote('Long-press a track for more.'),
+      ],
+    );
+    if (!mini) return page;
+    return Stack(
+      children: [
+        VBottomInset(extra: miniPlayerHeight + 12, child: page),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: bottom + 12,
+          child: const MiniPlayer(),
+        ),
       ],
     );
   }

@@ -84,6 +84,32 @@ class ThumbTile extends StatelessWidget {
   }
 }
 
+/// A track's thumbnail (Settings → Artwork), else the outlined tile.
+class TrackArt extends ConsumerWidget {
+  const TrackArt(this.videoId, {super.key, this.size = 64, this.radius = 14});
+
+  final String videoId;
+  final double size;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final file = ref.watch(artworkProvider(videoId)).value;
+    if (file == null) return ThumbTile(size: size, radius: radius);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Image.file(
+        file,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => ThumbTile(size: size, radius: radius),
+      ),
+    );
+  }
+}
+
 /// The small glyph at the end of a track row.
 class CacheGlyph extends ConsumerWidget {
   const CacheGlyph(this.videoId, {super.key});
