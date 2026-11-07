@@ -74,16 +74,10 @@ class Library {
       await _writeTracks(id, yt.videos, at, existing: existing);
       await (db.update(db.playlists)..where((p) => p.id.equals(id))).write(
         // The title isn't touched: it may have been renamed in Idris.
-        PlaylistsCompanion(
-          channel: Value(yt.channel),
-          lastSyncedAt: Value(at),
-        ),
+        PlaylistsCompanion(channel: Value(yt.channel), lastSyncedAt: Value(at)),
       );
       await _dropOrphans();
-      return SyncResult(
-        added: diff.added.length,
-        removed: diff.removed.length,
-      );
+      return SyncResult(added: diff.added.length, removed: diff.removed.length);
     });
   }
 
@@ -187,14 +181,15 @@ class Library {
 
   /// A playlist's tracks, in YouTube's order.
   Stream<List<Track>> watchPlaylistTracks(int id) {
-    final q = db.select(db.playlistTracks).join([
-      innerJoin(
-        db.tracks,
-        db.tracks.videoId.equalsExp(db.playlistTracks.videoId),
-      ),
-    ])
-      ..where(db.playlistTracks.playlistId.equals(id))
-      ..orderBy([OrderingTerm.asc(db.playlistTracks.position)]);
+    final q =
+        db.select(db.playlistTracks).join([
+            innerJoin(
+              db.tracks,
+              db.tracks.videoId.equalsExp(db.playlistTracks.videoId),
+            ),
+          ])
+          ..where(db.playlistTracks.playlistId.equals(id))
+          ..orderBy([OrderingTerm.asc(db.playlistTracks.position)]);
     return q.watch().map(
       (rows) => [for (final r in rows) r.readTable(db.tracks)],
     );
@@ -204,21 +199,22 @@ class Library {
 
   /// The newest tracks across playlists.
   Stream<List<TrackInPlaylist>> watchRecentlyAdded({int limit = 10}) {
-    final q = db.select(db.playlistTracks).join([
-      innerJoin(
-        db.tracks,
-        db.tracks.videoId.equalsExp(db.playlistTracks.videoId),
-      ),
-      innerJoin(
-        db.playlists,
-        db.playlists.id.equalsExp(db.playlistTracks.playlistId),
-      ),
-    ])
-      ..orderBy([
-        OrderingTerm.desc(db.playlistTracks.firstSeenAt),
-        OrderingTerm.desc(db.playlistTracks.position),
-      ])
-      ..limit(limit * 3);
+    final q =
+        db.select(db.playlistTracks).join([
+            innerJoin(
+              db.tracks,
+              db.tracks.videoId.equalsExp(db.playlistTracks.videoId),
+            ),
+            innerJoin(
+              db.playlists,
+              db.playlists.id.equalsExp(db.playlistTracks.playlistId),
+            ),
+          ])
+          ..orderBy([
+            OrderingTerm.desc(db.playlistTracks.firstSeenAt),
+            OrderingTerm.desc(db.playlistTracks.position),
+          ])
+          ..limit(limit * 3);
     return q.watch().map((rows) {
       final seen = <String>{};
       final out = <TrackInPlaylist>[];
@@ -297,9 +293,8 @@ class Library {
     db.cacheEntries,
   )..where((c) => c.videoId.equals(videoId))).getSingleOrNull();
 
-  Future<void> putCache(CacheEntriesCompanion entry) => db
-      .into(db.cacheEntries)
-      .insert(entry, mode: InsertMode.insertOrReplace);
+  Future<void> putCache(CacheEntriesCompanion entry) =>
+      db.into(db.cacheEntries).insert(entry, mode: InsertMode.insertOrReplace);
 
   Future<void> updateCache(String videoId, CacheEntriesCompanion change) =>
       (db.update(
@@ -331,7 +326,9 @@ class Library {
   Stream<Settings> watchSettings() => db
       .select(db.prefs)
       .watch()
-      .map((rows) => Settings.fromPrefs({for (final r in rows) r.key: r.value}));
+      .map(
+        (rows) => Settings.fromPrefs({for (final r in rows) r.key: r.value}),
+      );
 
   Future<Settings> settings() => watchSettings().first;
 

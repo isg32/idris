@@ -103,14 +103,15 @@ class _OfflineTracks extends ConsumerWidget {
           for (final t in tracks)
             if (pinned.contains(t.videoId)) t,
         ];
-        final a = [
-          for (final t in tracks)
-            if (!pinned.contains(t.videoId)) t,
-        ]..sort(
-            (x, y) => _last(entries[y.videoId]).compareTo(
-              _last(entries[x.videoId]),
-            ),
-          );
+        final a =
+            [
+              for (final t in tracks)
+                if (!pinned.contains(t.videoId)) t,
+            ]..sort(
+              (x, y) =>
+                  _last(entries[y.videoId])
+                      .compareTo(_last(entries[x.videoId])),
+            );
         if (tracks.isEmpty) {
           return const VFootnote(
             'Nothing cached yet. Tracks you play are kept here, and pinned '
@@ -125,13 +126,8 @@ class _OfflineTracks extends ConsumerWidget {
                 subtitle: entries[t.videoId]?.lastPlayedAt == null
                     ? 'Not played yet'
                     : 'Played ${when(entries[t.videoId]!.lastPlayedAt!)}',
-                onTap: () => playTracks(
-                  context,
-                  ref,
-                  ts,
-                  index: i,
-                  source: 'Offline',
-                ),
+                onTap: () =>
+                    playTracks(context, ref, ts, index: i, source: 'Offline'),
                 onLongPress: () =>
                     showTrackActions(context, ref, t, source: 'Offline'),
               ),

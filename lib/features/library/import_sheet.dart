@@ -198,11 +198,7 @@ class _ImportFormState extends ConsumerState<ImportForm> {
               onPressed: _add,
             ),
         ] else
-          VButton.primary(
-            'Fetch',
-            enabled: !_busy,
-            onPressed: _fetch,
-          ),
+          VButton.primary('Fetch', enabled: !_busy, onPressed: _fetch),
       ],
     );
   }
