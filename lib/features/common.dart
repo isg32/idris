@@ -398,7 +398,10 @@ class PlaylistCard extends ConsumerWidget {
                 Text(subtitle, style: VText.secondary),
                 if (caching) ...[
                   const SizedBox(height: 6),
-                  VBar(value: s.cachedCount / s.trackCount),
+                  SizedBox(
+                    width: double.infinity,
+                    child: VBar(value: s.cachedCount / s.trackCount),
+                  ),
                 ],
               ],
             ),

@@ -177,31 +177,53 @@ class _VTabBarState extends State<VTabBar> with SingleTickerProviderStateMixin {
     ], Rect.fromLTWH(lefts[selected], top, widths[selected], _pillHeight));
   }
 
+  /// Room between tabs in the compact bar.
+  static const double _gap = 12;
+
+  /// The bar's width: just enough for its tabs with [_gap] between them,
+  /// for whichever tab has the longest label, so it never resizes as you
+  /// switch tabs. (Veronica's five tabs filled the screen; three would sit
+  /// far apart, so the bar hugs them and centres instead.)
+  double _naturalWidth(TextScaler scaler) {
+    var widest = 0.0;
+    for (var i = 0; i < widget.items.length; i++) {
+      final f = _target(i, 0, scaler);
+      final used = f.widths.fold<double>(0, (s, w) => s + w);
+      if (used > widest) widest = used;
+    }
+    return widest + _gap * widget.items.length + 12;
+  }
+
   @override
   Widget build(BuildContext context) {
     final scaler = MediaQuery.textScalerOf(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 22),
-      child: VGlass(
-        radius: _barHeight / 2,
+      child: Center(
         child: SizedBox(
-          height: _barHeight,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: LayoutBuilder(
-              builder: (context, box) {
-                final to = _target(widget.index, box.maxWidth, scaler);
-                return AnimatedBuilder(
-                  animation: _t,
-                  builder: (context, _) {
-                    final frame = _from == null
-                        ? to
-                        : _TabFrame.lerp(_from!, to, _t.value);
-                    _shown = frame;
-                    return _frame(frame, to);
+          width: _naturalWidth(scaler),
+          child: VGlass(
+            radius: _barHeight / 2,
+            child: SizedBox(
+              height: _barHeight,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: LayoutBuilder(
+                  builder: (context, box) {
+                    final to = _target(widget.index, box.maxWidth, scaler);
+                    return AnimatedBuilder(
+                      animation: _t,
+                      builder: (context, _) {
+                        final frame = _from == null
+                            ? to
+                            : _TabFrame.lerp(_from!, to, _t.value);
+                        _shown = frame;
+                        return _frame(frame, to);
+                      },
+                    );
                   },
-                );
-              },
+                ),
+              ),
             ),
           ),
         ),
