@@ -1,0 +1,52 @@
+name: idris
+description: "Audio from your own YouTube playlists — mantras, chants and calm music — cached as you listen."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.5.0
+  go_router: ^18.1.3
+  path_drawing: ^1.0.1
+  intl: ^0.20.3
+  drift: ^2.35.3
+  drift_flutter: ^0.3.1
+  just_audio: ^0.10.6
+  audio_service: ^0.18.19
+  path_provider: ^2.1.6
+  path: ^1.9.0
+  youtube_explode_dart: ^3.1.0
+  url_launcher: ^6.3.3
+  connectivity_plus: ^7.0.0
+  nothing_glyph_interface: ^0.0.10
+  file_picker: ^13.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.17.1
+  drift_dev: ^2.35.2
+
+flutter:
+  uses-material-design: false
+
+  assets:
+    - assets/fonts/OFL-Doto.txt
+    - assets/fonts/OFL-Inter.txt
+
+  shaders:
+    - shaders/progressive_blur.frag
+
+  fonts:
+    # Variable fonts (OFL); weights are set through the `wght` axis.
+    - family: Doto
+      fonts:
+        - asset: assets/fonts/Doto.ttf
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf
