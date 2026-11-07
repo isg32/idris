@@ -6,6 +6,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../app/router.dart';
 
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_text.dart';
@@ -19,10 +22,10 @@ import '../../core/widgets/v_progress.dart';
 import '../../data/library.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
-import '../../platform/crash_log.dart';
 import '../../platform/quality.dart';
 import '../../platform/youtube.dart';
 import '../common.dart';
+import 'about_page.dart';
 
 /// Settings: quality, cache, Glyph, library, about.
 class SettingsPage extends ConsumerWidget {
@@ -219,21 +222,18 @@ class SettingsPage extends ConsumerWidget {
         const SectionHeading('About'),
         VListSection(
           children: [
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onLongPress: CrashLog.instance.test,
-              child: const VListRow(
-                title: 'Idris',
-                subtitle: 'Long-press to see a test crash report',
-                value: '1.0.0',
+            VListRow(
+              leading: Image.asset(
+                'assets/icon/icon-base.png',
+                width: 44,
+                height: 44,
+                fit: BoxFit.contain,
               ),
+              title: 'Idris',
+              subtitle: 'Version $kAppVersion · licences, developer',
+              onTap: () => context.push(Routes.about),
             ),
           ],
-        ),
-        const VFootnote(
-          'Audio from your own YouTube playlists — nothing else. '
-          'Doto and Inter (OFL), NewPipe Extractor (GPL-3.0), '
-          'youtube_explode_dart (BSD-3), just_audio and audio_service (MIT).',
         ),
       ],
     );

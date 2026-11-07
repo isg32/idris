@@ -14,12 +14,13 @@ import 'platform/audio_handler.dart';
 import 'platform/cache_manager.dart';
 import 'platform/crash_log.dart';
 import 'features/crash_overlay.dart';
+import 'features/settings/about_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // First, so errors from here on are logged and shown, not lost.
   CrashLog.instance
-    ..appVersion = '1.0.0'
+    ..appVersion = kAppVersion
     ..install();
   ErrorWidget.builder = quietErrorWidget;
   _registerFontLicences();

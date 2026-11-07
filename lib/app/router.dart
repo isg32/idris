@@ -8,6 +8,7 @@ import '../features/onboarding/onboarding_page.dart';
 import '../features/player/player_page.dart';
 import '../features/player/player_sheet.dart';
 import '../features/playlist/playlist_page.dart';
+import '../features/settings/about_page.dart';
 import '../features/settings/settings_page.dart';
 import 'shell.dart';
 
@@ -18,6 +19,7 @@ abstract final class Routes {
   static const settings = '/settings';
   static const welcome = '/welcome';
   static const player = '/player';
+  static const about = '/about';
   static String playlist(int id) => '/playlist/$id';
 }
 
@@ -87,6 +89,12 @@ GoRouter buildRouter({required bool onboarded}) => GoRouter(
           child: const PlayerPage(),
         ),
       ),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: Routes.about,
+      pageBuilder: (context, state) =>
+          CupertinoPage<void>(key: state.pageKey, child: const AboutPage()),
     ),
     GoRoute(
       parentNavigatorKey: _rootKey,

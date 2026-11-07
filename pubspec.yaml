@@ -32,6 +32,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.17.1
   drift_dev: ^2.35.2
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: false
@@ -39,6 +40,10 @@ flutter:
   assets:
     - assets/fonts/OFL-Doto.txt
     - assets/fonts/OFL-Inter.txt
+    # The app icon (About) and the developer's picture, bundled so nothing
+    # is fetched.
+    - assets/icon/icon-base.png
+    - assets/images/developer.jpg
 
   shaders:
     - shaders/progressive_blur.frag
@@ -51,3 +56,14 @@ flutter:
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter.ttf
+
+# App icon: `dart run flutter_launcher_icons` regenerates the Android
+# launcher icons from assets/icon/ (adaptive + Android 13 themed icon).
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/icon/icon.png
+  adaptive_icon_background: assets/icon/background.png
+  adaptive_icon_foreground: assets/icon/foreground.png
+  adaptive_icon_monochrome: assets/icon/monochrome.png
+  min_sdk_android: 21
