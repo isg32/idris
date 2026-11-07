@@ -57,8 +57,13 @@ class PlaylistPage extends ConsumerWidget {
               child: VButton.primary(
                 'Play',
                 enabled: tracks.isNotEmpty,
-                onPressed: () =>
-                    playTracks(context, ref, tracks, source: playlist.title),
+                onPressed: () => playTracks(
+                  context,
+                  ref,
+                  tracks,
+                  source: playlist.title,
+                  dock: 12,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -74,6 +79,7 @@ class PlaylistPage extends ConsumerWidget {
                       ? 0
                       : DateTime.now().microsecond % tracks.length,
                   source: playlist.title,
+                  dock: 12,
                   shuffle: true,
                 ),
               ),
@@ -127,6 +133,7 @@ class PlaylistPage extends ConsumerWidget {
                     tracks,
                     index: i,
                     source: playlist.title,
+                    dock: 12,
                   ),
                   onLongPress: () =>
                       showTrackActions(context, ref, t, source: playlist.title),
@@ -144,7 +151,7 @@ class PlaylistPage extends ConsumerWidget {
           left: 0,
           right: 0,
           bottom: bottom + 12,
-          child: const MiniPlayer(),
+          child: const MiniPlayer(dock: 12),
         ),
       ],
     );

@@ -4,7 +4,6 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../../core/format.dart';
@@ -20,6 +19,7 @@ import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../../platform/audio_handler.dart';
 import '../../platform/playback_rules.dart';
+import 'player_sheet.dart';
 import 'player_sheets.dart';
 
 /// The full-screen player. Back keeps playing (Home shows "Now playing");
@@ -99,14 +99,14 @@ class PlayerPage extends ConsumerWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(20, top + 12, 20, bottom + 24),
       child: t == null
-          ? _Ended(onBack: () => context.pop())
+          ? _Ended(onBack: () => PlayerSheet.close(context))
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
                   children: [
                     VTappable(
-                      onTap: () => context.pop(),
+                      onTap: () => PlayerSheet.close(context),
                       child: Row(
                         children: [
                           const VIconView(VIcon.down, size: 16),
@@ -259,7 +259,7 @@ class PlayerPage extends ConsumerWidget {
                   'Stop session',
                   onPressed: () async {
                     await handler.stop();
-                    if (context.mounted) context.pop();
+                    if (context.mounted) await PlayerSheet.close(context);
                   },
                 ),
               ],

@@ -6,6 +6,7 @@ import '../features/home/home_page.dart';
 import '../features/library/library_page.dart';
 import '../features/onboarding/onboarding_page.dart';
 import '../features/player/player_page.dart';
+import '../features/player/player_sheet.dart';
 import '../features/playlist/playlist_page.dart';
 import '../features/settings/settings_page.dart';
 import 'shell.dart';
@@ -73,7 +74,19 @@ GoRouter buildRouter({required bool onboarded}) => GoRouter(
     GoRoute(
       parentNavigatorKey: _rootKey,
       path: Routes.player,
-      pageBuilder: (context, state) => fadePage(state, const PlayerPage()),
+      // A see-through page: the player panel animates itself out of (and
+      // back into) the mini player underneath.
+      pageBuilder: (context, state) => CustomTransitionPage<void>(
+        key: state.pageKey,
+        opaque: false,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        transitionsBuilder: (_, _, _, child) => child,
+        child: PlayerSheet(
+          dock: state.extra is double ? state.extra! as double : shellMiniDock,
+          child: const PlayerPage(),
+        ),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: _rootKey,

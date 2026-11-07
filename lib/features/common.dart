@@ -19,6 +19,7 @@ import '../core/widgets/v_surface.dart';
 import '../data/models.dart';
 import '../data/providers.dart';
 import '../platform/youtube.dart';
+import 'player/player_sheet.dart';
 
 /// `1:02:14`, `48:30`.
 String trackLength(Track t) => t.durationMs == 0
@@ -239,9 +240,10 @@ Future<void> playTracks(
   int index = 0,
   required String source,
   bool shuffle = false,
+  double dock = shellMiniDock,
 }) async {
   if (tracks.isEmpty) return;
-  unawaited(context.push(Routes.player));
+  unawaited(context.push(Routes.player, extra: dock));
   await ref
       .read(audioHandlerProvider)
       .startSession(tracks, index: index, source: source, shuffle: shuffle);

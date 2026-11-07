@@ -13,6 +13,7 @@ import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_ink.dart';
 import '../../data/providers.dart';
 import '../common.dart';
+import 'player_sheet.dart';
 
 /// The mini player's height (the shell and pages leave room for it).
 const double miniPlayerHeight = 64;
@@ -21,7 +22,11 @@ const double miniPlayerHeight = 64;
 /// Music): artwork, title, play/pause and next, with a thin progress line.
 /// Tap it for the full player. Hidden when nothing is playing.
 class MiniPlayer extends ConsumerWidget {
-  const MiniPlayer({super.key});
+  const MiniPlayer({super.key, this.dock = shellMiniDock});
+
+  /// Where this mini player sits above the bottom safe area, so the full
+  /// player grows out of (and shrinks back into) exactly this spot.
+  final double dock;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,10 +51,12 @@ class MiniPlayer extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => context.push(Routes.player),
+        onTap: () => context.push(Routes.player, extra: dock),
         // Swipe up opens the player too.
         onVerticalDragEnd: (d) {
-          if ((d.primaryVelocity ?? 0) < -200) context.push(Routes.player);
+          if ((d.primaryVelocity ?? 0) < -200) {
+            context.push(Routes.player, extra: dock);
+          }
         },
         child: VGlass(
           radius: 20,
