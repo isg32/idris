@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import 'net.dart';
 import 'youtube.dart';
 
 /// Reads a playlist's videos straight from YouTube's web pages.
@@ -12,7 +13,7 @@ import 'youtube.dart';
 /// This reads both, and follows the continuation tokens (100 videos a page)
 /// through the same `youtubei/v1/browse` endpoint the website uses.
 class PlaylistScraper {
-  PlaylistScraper({HttpClient? client}) : _client = client ?? HttpClient();
+  PlaylistScraper({HttpClient? client}) : _client = client ?? youtubeHttpClient();
 
   final HttpClient _client;
 

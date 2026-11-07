@@ -4,10 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
+import 'net.dart';
 import 'playlist_scraper.dart';
 import 'quality.dart';
 
 const _newPipe = MethodChannel('idris/youtube');
+
+/// youtube_explode on Idris's network route, so a stream link is asked
+/// for from the same address that downloads it (see `net.dart`).
+YoutubeExplode _yt() =>
+    YoutubeExplode(httpClient: YoutubeHttpClient(youtubeClient()));
 
 /// A video in a playlist.
 class YtVideo {
@@ -63,7 +69,7 @@ String? parsePlaylistId(String text) =>
 Future<YtPlaylist> fetchPlaylist(String idOrUrl) async {
   final id = parsePlaylistId(idOrUrl);
   if (id == null) throw PlaylistError.notAPlaylist;
-  final yt = YoutubeExplode();
+  final yt = _yt();
   try {
     final Playlist meta;
     try {
@@ -149,7 +155,7 @@ typedef AudioResolver =
 
 /// The Dart extractor, asking as [client].
 AudioResolver _explode(YoutubeApiClient client) => (id, quality) async {
-  final yt = YoutubeExplode();
+  final yt = _yt();
   try {
     final manifest = await yt.videos.streamsClient.getManifest(
       VideoId(id),
@@ -193,10 +199,15 @@ Future<ResolvedAudio> _newPipeAudio(String id, AudioQuality quality) async {
   );
 }
 
-/// The ways a stream is found, tried in order, as yt-dlp and NewPipe do:
-/// clients whose links need no decoding first (fast), then NewPipe's
-/// extractor, which its team keeps working when YouTube changes.
+/// The ways a stream is found, tried in order.
+///
+/// NewPipe's extractor comes first: YouTube now serves only the first 1 MB
+/// of youtube_explode's Android-client links (then 403 without a
+/// proof-of-origin token), and NewPipe's team keeps its links whole. The
+/// Dart clients follow for when NewPipe can't find a stream; a link is
+/// checked before use (see `CacheManager`).
 final List<AudioResolver> audioResolvers = [
+  _newPipeAudio,
   _explode(YoutubeApiClient.androidVr),
   _explode(YoutubeApiClient.androidSdkless),
   _explode(YoutubeApiClient.tv),

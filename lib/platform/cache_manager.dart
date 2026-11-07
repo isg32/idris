@@ -146,8 +146,8 @@ class CacheManager {
         kbps: entry?.kbps ?? 0,
       );
     }
-    final (audio, way) = await resolve(videoId, quality, from: from);
-    final download = await _begin(videoId, audio);
+    final (audio, way, total) = await _resolveWorking(videoId, quality, from);
+    final download = await _begin(videoId, audio, total: total);
     return OpenedAudio(
       source: CachingAudioSource(download),
       cached: false,
@@ -156,8 +156,39 @@ class CacheManager {
     );
   }
 
+  /// A stream YouTube actually serves: each resolver's link is tried with
+  /// a one-byte request (which also gives the length) before it's used,
+  /// so a refused link (403) moves on to the next way instead of failing
+  /// playback.
+  Future<(ResolvedAudio, int, int)> _resolveWorking(
+    String videoId,
+    AudioQuality quality,
+    int from,
+  ) async {
+    Object? last;
+    var next = from;
+    while (true) {
+      final (audio, way) = await resolve(videoId, quality, from: next);
+      try {
+        final total = await CacheDownload.fetchLength(audio.url);
+        return (audio, way, total);
+      } on Object catch (e) {
+        debugPrint('YouTube way ${way + 1} gave a link that fails: $e');
+        last = e;
+        next = way + 1;
+        if (next >= audioResolvers.length) {
+          throw StateError('Every stream for $videoId was refused: $last');
+        }
+      }
+    }
+  }
+
   /// Starts (or restarts, with a fresh link) the download of [videoId].
-  Future<CacheDownload> _begin(String videoId, ResolvedAudio audio) async {
+  Future<CacheDownload> _begin(
+    String videoId,
+    ResolvedAudio audio, {
+    int? total,
+  }) async {
     _active.remove(videoId)?.cancel();
     final d = await dir;
     final path = p.join(d.path, '$videoId.${audio.extension}');
@@ -168,15 +199,16 @@ class CacheManager {
     if (old != null && old.path != path) {
       await _deleteFiles(old.path);
     }
-    final total = audio.bytes ?? await CacheDownload.fetchLength(audio.url);
-    if (part.existsSync() && part.lengthSync() > total) {
+    final length =
+        total ?? audio.bytes ?? await CacheDownload.fetchLength(audio.url);
+    if (part.existsSync() && part.lengthSync() > length) {
       await part.delete();
     }
     final download = CacheDownload(
       videoId: videoId,
       url: audio.url,
       partFile: part,
-      total: total,
+      total: length,
       mime: audio.mime,
     );
     _active[videoId] = download;
@@ -185,7 +217,7 @@ class CacheManager {
         videoId: videoId,
         path: path,
         bytes: Value(download.written),
-        totalBytes: Value(total),
+        totalBytes: Value(length),
         kbps: Value(audio.kbps),
         mime: Value(audio.mime),
         lastPlayedAt: Value(old?.lastPlayedAt),
@@ -285,8 +317,8 @@ class CacheManager {
               await running.done;
             } else {
               final s = await library.settings();
-              final (audio, _) = await resolve(id, s.quality);
-              final d = await _begin(id, audio);
+              final (audio, _, total) = await _resolveWorking(id, s.quality, 0);
+              final d = await _begin(id, audio, total: total);
               await d.done;
             }
           } on Object catch (e) {

@@ -5,6 +5,8 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
+import 'net.dart';
+
 /// Downloads one audio stream into a file, in order, in small range
 /// requests, while letting playback read from it.
 ///
@@ -12,7 +14,9 @@ import 'package:just_audio/just_audio.dart';
 /// come from the file as soon as they're written, so a track played once is
 /// on the phone for good. YouTube slows down big single requests, so the
 /// file is fetched [chunk] bytes at a time, as NewPipe and yt-dlp do.
-/// A file left half-downloaded (`.part`) is resumed, not restarted.
+/// YouTube refuses (403) any request for more than 1 MB of a stream, so
+/// [chunk] must stay at or under that; it's what YouTube's own players ask
+/// for. A file left half-downloaded (`.part`) is resumed, not restarted.
 class CacheDownload {
   CacheDownload({
     required this.videoId,
@@ -20,10 +24,13 @@ class CacheDownload {
     required this.partFile,
     required this.total,
     required this.mime,
-    this.chunk = 4 * 1024 * 1024,
+    this.chunk = maxChunk,
     HttpClient? client,
-  }) : _client = client ?? HttpClient(),
+  }) : _client = client ?? _streams,
        written = partFile.existsSync() ? partFile.lengthSync() : 0;
+
+  /// The most YouTube serves in one request.
+  static const int maxChunk = 1024 * 1024;
 
   final String videoId;
   final Uri url;
@@ -69,7 +76,10 @@ class CacheDownload {
         if (res.statusCode != HttpStatus.partialContent &&
             res.statusCode != HttpStatus.ok) {
           await res.drain<void>();
-          throw HttpException('HTTP ${res.statusCode}', uri: url);
+          throw HttpException(
+            'HTTP ${res.statusCode} for bytes=$written-$end of $total',
+            uri: url,
+          );
         }
         // A server that ignores the range sends the whole file: skip to
         // where we are.
@@ -154,20 +164,24 @@ class CacheDownload {
     }
   }
 
+  /// Bytes [start] to [end] from the network, in [chunk]-sized requests.
   Stream<List<int>> _direct(int start, int end) async* {
-    final req = await _client.getUrl(url);
-    req.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-${end - 1}');
-    final res = await req.close();
-    if (res.statusCode != HttpStatus.partialContent) {
-      await res.drain<void>();
-      throw HttpException('HTTP ${res.statusCode}', uri: url);
+    for (var from = start; from < end; from += chunk) {
+      final to = math.min(from + chunk, end) - 1;
+      final req = await _client.getUrl(url);
+      req.headers.set(HttpHeaders.rangeHeader, 'bytes=$from-$to');
+      final res = await req.close();
+      if (res.statusCode != HttpStatus.partialContent) {
+        await res.drain<void>();
+        throw HttpException('HTTP ${res.statusCode}', uri: url);
+      }
+      yield* res;
     }
-    yield* res;
   }
 
   /// Asks the server how big the stream is (when YouTube didn't say).
   static Future<int> fetchLength(Uri url, {HttpClient? client}) async {
-    final c = client ?? HttpClient();
+    final c = client ?? _streams;
     final req = await c.getUrl(url);
     req.headers.set(HttpHeaders.rangeHeader, 'bytes=0-0');
     final res = await req.close();
@@ -185,6 +199,9 @@ class CacheDownload {
 // StreamAudioSource is marked experimental, but it has been stable for
 // years and is the supported way to serve bytes to the player.
 // ignore_for_file: experimental_member_use
+
+/// The client every audio download uses (see `net.dart`).
+final HttpClient _streams = youtubeHttpClient();
 
 /// Plays a [CacheDownload] through just_audio's local proxy: the player
 /// reads the file while it's still being written.

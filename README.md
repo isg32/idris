@@ -21,10 +21,12 @@ Android, sideloaded. Same design language as [Veronica](../veronica): black and 
 ```
 track ──► CacheManager.open
             ├─ complete file in <appSupport>/audio ──► AudioSource.file   (no network)
-            └─ else resolve a stream (quality-aware), in order:
-                 youtube_explode: androidVr → androidSdkless → tv → safari
+            └─ else resolve a stream (quality-aware), in order, using the
+               first whose link YouTube actually serves:
                  NewPipe Extractor (YouTubeChannel.kt)
-               ──► CacheDownload: 4 MB range requests into <id>.<ext>.part
+                 youtube_explode: androidVr → androidSdkless → tv → safari
+               ──► CacheDownload: 1 MB range requests (YouTube refuses more)
+                   into <id>.<ext>.part
                ──► CachingAudioSource (just_audio StreamAudioSource) reads the
                    .part file as it fills; a seek past the download reads that
                    range from the network directly
@@ -40,6 +42,8 @@ If a stream breaks mid-play, the next resolver is tried and playback resumes at 
 | `lib/core/` | Veronica's design system: theme tokens, widgets, icons, progressive-blur shader |
 | `lib/data/` | drift database, `Library` repository, models, Riverpod providers |
 | `lib/platform/youtube.dart` | playlist fetch, stream resolvers |
+| `lib/platform/playlist_scraper.dart` | reads playlist pages (YouTube's current format) |
+| `lib/platform/net.dart` | one IPv6/IPv4 route for all YouTube traffic |
 | `lib/platform/quality.dart` | quality setting and stream choice (mirrored in `YouTubeChannel.kt`) |
 | `lib/platform/cache_download.dart` | chunked download + streaming source |
 | `lib/platform/cache_manager.dart` | cache index, pre-cache worker, eviction |

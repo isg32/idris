@@ -95,9 +95,15 @@ void main() {
       mime: 'audio/mp4',
       chunk: 16 * 1024,
     );
-    final got = await d.read(200000, 210000).expand((b) => b).toList();
-    expect(got, data.sublist(200000, 210000));
-    expect(ranges, contains('bytes=200000-209999'));
+    final got = await d.read(200000, 230000).expand((b) => b).toList();
+    expect(ranges, [
+      'bytes=200000-216383',
+      'bytes=216384-229999',
+    ]);
+    ranges.clear();
+    final again = await d.read(200000, 210000).expand((b) => b).toList();
+    expect(again, data.sublist(200000, 210000));
+    expect(got, data.sublist(200000, 230000));
     await server.close(force: true);
   });
 
