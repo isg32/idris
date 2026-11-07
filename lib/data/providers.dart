@@ -201,9 +201,7 @@ final syncOneProvider = Provider<Future<SyncResult> Function(int id)>((ref) {
 });
 
 /// The last sync's outcome, for "Synced · 2 new" on Home.
-final lastSyncProvider = NotifierProvider<LastSync, SyncResult?>(
-  LastSync.new,
-);
+final lastSyncProvider = NotifierProvider<LastSync, SyncResult?>(LastSync.new);
 
 class LastSync extends Notifier<SyncResult?> {
   @override

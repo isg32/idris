@@ -13,7 +13,8 @@ import 'youtube.dart';
 /// This reads both, and follows the continuation tokens (100 videos a page)
 /// through the same `youtubei/v1/browse` endpoint the website uses.
 class PlaylistScraper {
-  PlaylistScraper({HttpClient? client}) : _client = client ?? youtubeHttpClient();
+  PlaylistScraper({HttpClient? client})
+    : _client = client ?? youtubeHttpClient();
 
   final HttpClient _client;
 
@@ -134,24 +135,22 @@ Map<String, dynamic>? extractInitialData(String html) {
 }
 
 /// Undoes JavaScript string escapes (`\x7b`, `é`, `\"`, `\\`, `\/`).
-String _unescapeJs(String s) => s.replaceAllMapped(
-  RegExp(r'\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|.)'),
-  (m) {
-    final e = m[1]!;
-    if (e.startsWith('x') && e.length == 3) {
-      return String.fromCharCode(int.parse(e.substring(1), radix: 16));
-    }
-    if (e.startsWith('u') && e.length == 5) {
-      return String.fromCharCode(int.parse(e.substring(1), radix: 16));
-    }
-    return switch (e) {
-      'n' => '\n',
-      't' => '\t',
-      'r' => '\r',
-      _ => e,
-    };
-  },
-);
+String _unescapeJs(String s) =>
+    s.replaceAllMapped(RegExp(r'\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|.)'), (m) {
+      final e = m[1]!;
+      if (e.startsWith('x') && e.length == 3) {
+        return String.fromCharCode(int.parse(e.substring(1), radix: 16));
+      }
+      if (e.startsWith('u') && e.length == 5) {
+        return String.fromCharCode(int.parse(e.substring(1), radix: 16));
+      }
+      return switch (e) {
+        'n' => '\n',
+        't' => '\t',
+        'r' => '\r',
+        _ => e,
+      };
+    });
 
 /// One page of a playlist: its videos and the token for the next page.
 typedef PlaylistPageItems = ({List<YtVideo> videos, String? continuation});

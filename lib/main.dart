@@ -12,9 +12,16 @@ import 'data/library.dart';
 import 'data/providers.dart';
 import 'platform/audio_handler.dart';
 import 'platform/cache_manager.dart';
+import 'platform/crash_log.dart';
+import 'features/crash_overlay.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // First, so errors from here on are logged and shown, not lost.
+  CrashLog.instance
+    ..appVersion = '1.0.0'
+    ..install();
+  ErrorWidget.builder = quietErrorWidget;
   _registerFontLicences();
   unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
 
@@ -38,6 +45,7 @@ Future<void> main() async {
       child: IdrisApp(router: buildRouter(onboarded: onboarded)),
     ),
   );
+  unawaited(CrashLog.instance.checkLastRun());
 }
 
 /// Doto and Inter are bundled under the SIL Open Font License.

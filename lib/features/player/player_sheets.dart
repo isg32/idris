@@ -394,8 +394,9 @@ class _QueueList extends ConsumerWidget {
                                         ref.watch(
                                           trackCacheStateProvider(t.videoId),
                                         ),
-                                        ref.watch(cacheProgressProvider)[t
-                                            .videoId],
+                                        ref.watch(
+                                          cacheProgressProvider,
+                                        )[t.videoId],
                                       ),
                                       style: VText.secondary,
                                     ),

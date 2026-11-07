@@ -192,7 +192,9 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
         title: t.title,
         artist: t.channel,
         album: _s.source,
-        duration: t.durationMs > 0 ? Duration(milliseconds: t.durationMs) : null,
+        duration: t.durationMs > 0
+            ? Duration(milliseconds: t.durationMs)
+            : null,
         artUri: thumbnailUrl(t.videoId),
       ),
     );
@@ -231,9 +233,7 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
       return;
     }
     _recovering = true;
-    _s = _s.copyWith(
-      problem: () => 'Couldn\'t play — trying another source',
-    );
+    _s = _s.copyWith(problem: () => 'Couldn\'t play — trying another source');
     try {
       await _open(from: _resolver + 1, at: player.position);
     } finally {
@@ -249,7 +249,11 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
     );
     await Future<void>.delayed(const Duration(seconds: 2));
     if (_s.hasNext) {
-      _s = _s.copyWith(index: _s.index + 1, repeatDone: 0, repeatTarget: () => null);
+      _s = _s.copyWith(
+        index: _s.index + 1,
+        repeatDone: 0,
+        repeatTarget: () => null,
+      );
       await _open();
     } else {
       await player.stop();
@@ -388,11 +392,7 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
       final original = _unshuffled ?? _s.queue;
       final i = original.indexWhere((t) => t.videoId == current.videoId);
       _unshuffled = null;
-      _s = _s.copyWith(
-        queue: original,
-        index: i < 0 ? 0 : i,
-        shuffle: false,
-      );
+      _s = _s.copyWith(queue: original, index: i < 0 ? 0 : i, shuffle: false);
     }
   }
 

@@ -19,6 +19,7 @@ import '../../core/widgets/v_progress.dart';
 import '../../data/library.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../../platform/crash_log.dart';
 import '../../platform/quality.dart';
 import '../../platform/youtube.dart';
 import '../common.dart';
@@ -33,7 +34,8 @@ class SettingsPage extends ConsumerWidget {
     final storage = ref.watch(storageProvider);
     final glyph = ref.watch(glyphAvailableProvider).value ?? false;
     final library = ref.read(libraryProvider);
-    void set(String key, String value) => unawaited(library.setPref(key, value));
+    void set(String key, String value) =>
+        unawaited(library.setPref(key, value));
 
     final used = storage.pinned + storage.auto;
     final limitBytes = s.cacheLimitBytes;
@@ -53,9 +55,7 @@ class SettingsPage extends ConsumerWidget {
                   Text('Audio quality', style: VText.rowTitle),
                   const SizedBox(height: 10),
                   VSegmented<AudioQuality>(
-                    segments: {
-                      for (final q in AudioQuality.values) q: q.label,
-                    },
+                    segments: {for (final q in AudioQuality.values) q: q.label},
                     value: s.quality,
                     onChanged: (q) => set('quality', q.name),
                   ),
@@ -73,7 +73,10 @@ class SettingsPage extends ConsumerWidget {
               subtitle: 'Default for new counts',
               trailing: VSegmented<RepeatEnd>(
                 compact: true,
-                segments: const {RepeatEnd.stop: 'Stop', RepeatEnd.next: 'Next'},
+                segments: const {
+                  RepeatEnd.stop: 'Stop',
+                  RepeatEnd.next: 'Next',
+                },
                 value: s.repeatEnd,
                 onChanged: (v) => set('repeatEnd', v.name),
               ),
@@ -214,8 +217,18 @@ class SettingsPage extends ConsumerWidget {
         ),
 
         const SectionHeading('About'),
-        const VListSection(
-          children: [VListRow(title: 'Idris', value: '1.0.0')],
+        VListSection(
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onLongPress: CrashLog.instance.test,
+              child: const VListRow(
+                title: 'Idris',
+                subtitle: 'Long-press to see a test crash report',
+                value: '1.0.0',
+              ),
+            ),
+          ],
         ),
         const VFootnote(
           'Audio from your own YouTube playlists — nothing else. '
@@ -251,7 +264,10 @@ class _StorageBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             child: Row(
               children: [
-                SizedBox(width: p, child: ColoredBox(color: ink)),
+                SizedBox(
+                  width: p,
+                  child: ColoredBox(color: ink),
+                ),
                 SizedBox(
                   width: a,
                   child: VHatched(width: a, height: 6),
@@ -354,10 +370,7 @@ Future<void> _confirmClear(BuildContext context, WidgetRef ref, int bytes) =>
             },
           ),
           const SizedBox(height: 10),
-          VButton.secondary(
-            'Keep',
-            onPressed: () => Navigator.of(sheet).pop(),
-          ),
+          VButton.secondary('Keep', onPressed: () => Navigator.of(sheet).pop()),
         ],
       ),
     );

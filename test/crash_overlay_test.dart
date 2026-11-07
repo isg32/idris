@@ -1,0 +1,23 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:idris/features/crash_overlay.dart';
+import 'package:idris/platform/crash_log.dart';
+
+void main() {
+  testWidgets('a report shows over the app, and Close dismisses it', (t) async {
+    await t.pumpWidget(
+      const CupertinoApp(
+        home: CrashOverlay(child: Text('app')),
+      ),
+    );
+    expect(find.text('Something went wrong'), findsNothing);
+    CrashLog.instance.report(StateError('boom'), StackTrace.current);
+    await t.pump();
+    expect(find.text('Something went wrong'), findsOneWidget);
+    expect(find.text('Copy log'), findsOneWidget);
+    expect(find.text('Save to Downloads'), findsOneWidget);
+    await t.tap(find.text('Close'));
+    await t.pump();
+    expect(find.text('Something went wrong'), findsNothing);
+  });
+}

@@ -45,8 +45,7 @@ class CacheManager {
     Future<List<ConnectivityResult>> Function()? checkConnectivity,
     this.resolve = resolveAudio,
   }) : _dirOverride = dir,
-       _connectivity =
-           connectivity ?? Connectivity().onConnectivityChanged,
+       _connectivity = connectivity ?? Connectivity().onConnectivityChanged,
        _checkConnectivity =
            checkConnectivity ?? Connectivity().checkConnectivity;
 
@@ -83,9 +82,11 @@ class CacheManager {
   Timer? _tick;
 
   Future<Directory> get dir async {
-    final d = _dir ??= _dirOverride ?? Directory(
-      p.join((await getApplicationSupportDirectory()).path, 'audio'),
-    );
+    final d = _dir ??=
+        _dirOverride ??
+        Directory(
+          p.join((await getApplicationSupportDirectory()).path, 'audio'),
+        );
     if (!d.existsSync()) await d.create(recursive: true);
     return d;
   }
@@ -431,12 +432,15 @@ List<CacheEntry> chooseEvictions(
   ];
   var total = auto.fold<int>(0, (sum, e) => sum + e.bytes);
   if (total <= limitBytes) return const [];
-  final candidates = [
-    for (final e in auto)
-      if (!keep.contains(e.videoId)) e,
-  ]..sort((a, b) => (a.lastPlayedAt ?? a.cachedAt).compareTo(
-      b.lastPlayedAt ?? b.cachedAt,
-    ));
+  final candidates =
+      [
+        for (final e in auto)
+          if (!keep.contains(e.videoId)) e,
+      ]..sort(
+        (a, b) => (a.lastPlayedAt ?? a.cachedAt).compareTo(
+          b.lastPlayedAt ?? b.cachedAt,
+        ),
+      );
   final out = <CacheEntry>[];
   for (final e in candidates) {
     if (total <= limitBytes) break;

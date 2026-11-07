@@ -96,8 +96,7 @@ class Settings {
 
   static Settings fromPrefs(Map<String, String> p) => Settings(
     quality: AudioQuality.parse(p['quality']),
-    cacheLimitGb:
-        int.tryParse(p['cacheLimitGb'] ?? '') ?? defaultCacheLimitGb,
+    cacheLimitGb: int.tryParse(p['cacheLimitGb'] ?? '') ?? defaultCacheLimitGb,
     precacheWifiOnly: p['precacheWifiOnly'] != 'false',
     glyph: p['glyph'] == 'true',
     repeatEnd: p['repeatEnd'] == 'stop' ? RepeatEnd.stop : RepeatEnd.next,

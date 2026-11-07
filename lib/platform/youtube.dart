@@ -61,8 +61,7 @@ class PlaylistError implements Exception {
 }
 
 /// The playlist ID in a pasted link (or a bare ID), else null.
-String? parsePlaylistId(String text) =>
-    PlaylistId.parsePlaylistId(text.trim());
+String? parsePlaylistId(String text) => PlaylistId.parsePlaylistId(text.trim());
 
 /// Fetches a playlist's title and every video in it. Deleted and private
 /// videos YouTube still lists are skipped.
@@ -150,8 +149,10 @@ class ResolvedAudio {
 }
 
 /// One way of finding a video's audio stream.
-typedef AudioResolver =
-    Future<ResolvedAudio> Function(String videoId, AudioQuality quality);
+typedef AudioResolver = Future<ResolvedAudio> Function(
+  String videoId,
+  AudioQuality quality,
+);
 
 /// The Dart extractor, asking as [client].
 AudioResolver _explode(YoutubeApiClient client) => (id, quality) async {

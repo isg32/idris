@@ -270,10 +270,10 @@ List<Widget> _gapped(List<Widget> children) => [
   ],
 ];
 
-ScrollPhysics? _physics(Future<void> Function()? onRefresh) =>
-    onRefresh == null
+ScrollPhysics? _physics(Future<void> Function()? onRefresh) => onRefresh == null
     ? null
     : const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
 
-Widget? _refresh(Future<void> Function()? onRefresh) =>
-    onRefresh == null ? null : CupertinoSliverRefreshControl(onRefresh: onRefresh);
+Widget? _refresh(Future<void> Function()? onRefresh) => onRefresh == null
+    ? null
+    : CupertinoSliverRefreshControl(onRefresh: onRefresh);

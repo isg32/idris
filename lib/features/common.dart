@@ -73,11 +73,7 @@ class ThumbTile extends StatelessWidget {
             ),
           ),
           if (badge != null)
-            Positioned(
-              top: 10,
-              left: 10,
-              child: VPill.badge(badge!),
-            ),
+            Positioned(top: 10, left: 10, child: VPill.badge(badge!)),
         ],
       ),
     );
@@ -289,7 +285,8 @@ Future<void> showTrackActions(
                 leading: const VIconView(VIcon.playNext),
                 title: 'Play next',
                 chevron: false,
-                onTap: () => done(() => handler.playNext(track, source: source)),
+                onTap: () =>
+                    done(() => handler.playNext(track, source: source)),
               ),
               VListRow(
                 leading: const VIconView(VIcon.queue),
