@@ -115,7 +115,7 @@ class _AppMark extends StatelessWidget {
           Text('Version $kAppVersion', style: VText.inter(13, weight: 300)),
           const SizedBox(height: 4),
           Text(
-            'Your mantras and calm music, cached as you listen.',
+            'Idris is a last name of someone who belongs to my heart, a very dear person to me. it was tragic but well, here we are.',
             textAlign: TextAlign.center,
             style: VText.secondary,
           ),
