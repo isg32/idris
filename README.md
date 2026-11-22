@@ -173,7 +173,7 @@ flutter run                        # with the phone connected over USB debugging
 On Linux:
 
 ```sh
-./android/gradlew -p linux/extractor installDist   # the NewPipe helper
+./linux/extractor/gradlew -p linux/extractor installDist   # the NewPipe helper
 flutter run -d linux                               # run from the repo root
 ```
 

@@ -3,7 +3,7 @@
 // line-based JSON protocol on stdin/stdout. lib/platform/desktop_extractor.dart
 // starts it; linux/build_appimage.sh bundles it with a trimmed Java runtime.
 //
-// Build: ./android/gradlew -p linux/extractor installDist
+// Build: ./linux/extractor/gradlew -p linux/extractor installDist
 plugins {
     application
 }

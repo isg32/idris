@@ -29,7 +29,7 @@ echo "== Flutter release build"
 flutter build linux --release
 
 echo "== NewPipe helper"
-./android/gradlew -p linux/extractor installDist -q
+./linux/extractor/gradlew -p linux/extractor installDist -q
 
 echo "== AppDir"
 rm -rf "$APPDIR"
