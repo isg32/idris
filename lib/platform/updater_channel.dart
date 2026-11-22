@@ -65,6 +65,13 @@ abstract interface class UpdatePlatform {
   /// Starts installing [path]; how it goes arrives on [results].
   Future<void> install(String path);
   Stream<InstallResult> get results;
+
+  /// After a successful install Idris must be restarted by hand (the
+  /// AppImage replaced itself) rather than being closed by Android.
+  bool get restartsToFinish;
+
+  /// Starts the installed (new) Idris and closes this one.
+  Future<void> restart();
 }
 
 /// [UpdatePlatform] over the `idris/update` channel (Android only).
@@ -121,4 +128,10 @@ class ChannelUpdatePlatform implements UpdatePlatform {
   @override
   Future<void> install(String path) =>
       _channel.invokeMethod<void>('install', {'path': path});
+
+  @override
+  bool get restartsToFinish => false;
+
+  @override
+  Future<void> restart() async {} // Android restarts nothing: it replaced us
 }

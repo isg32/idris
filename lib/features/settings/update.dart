@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +22,7 @@ String updateLine(UpdateState s) => switch (s) {
   UpdateNeedsPermission() => 'Needs your OK to install',
   UpdateInstalling(:final confirming) =>
     confirming ? 'Confirm on the screen Android shows' : 'Installing…',
+  UpdateRestartNeeded() => 'Installed · restart to finish',
   UpdateFailed(:final reinstall) =>
     reinstall
         ? 'Reinstall once from GitHub'
@@ -71,6 +74,9 @@ class UpdateCard extends ConsumerWidget {
                       strokeWidth: 3,
                     ),
                     _ when busy => const VSpinner(size: 30),
+                    UpdateRestartNeeded() => const Center(
+                      child: VIconView(VIcon.check, size: 22),
+                    ),
                     UpdateFailed() => const Center(
                       child: VIconView(VIcon.warning, size: 22),
                     ),
@@ -185,7 +191,22 @@ class _UpdateSheet extends ConsumerWidget {
       UpdateInstalling(:final confirming) => _Progress(
         label: confirming
             ? 'Confirm on the screen Android shows'
+            : Platform.isLinux
+            ? 'Installing…'
             : 'Installing… Idris closes when it’s done',
+      ),
+      // The AppImage replaced itself: the new Idris starts on a restart.
+      UpdateRestartNeeded() => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Installed. Restart Idris to start using it; what you were '
+            'listening to stops for a moment.',
+            style: VText.secondary,
+          ),
+          const SizedBox(height: 12),
+          VButton.primary('Restart Idris', onPressed: up.restart),
+        ],
       ),
       UpdateFailed(:final message, :final reinstall) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

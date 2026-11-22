@@ -44,6 +44,15 @@ class FakePlatform implements UpdatePlatform {
 
   @override
   Future<void> install(String path) async => installs.add(path);
+
+  /// Like the AppImage: replaced in place, restarted by hand.
+  bool linux = false;
+
+  @override
+  bool get restartsToFinish => linux;
+
+  @override
+  Future<void> restart() async {}
 }
 
 /// GitHub, pretended: the manifest, and the APK behind one redirect
@@ -285,5 +294,38 @@ void main() {
     c = make();
     await up().start();
     expect(c.read(dismissedUpdateProvider), '0.32.0');
+  });
+
+  test('a PC never falls back to an Android APK', () {
+    final m = {
+      'version': '2.2.0',
+      'apks': {
+        'arm64-v8a': {
+          'url': 'u',
+          'sha256': 'a',
+          'size': 1,
+          'versionCode': 2017,
+        },
+      },
+    };
+    expect(UpdateRelease.fromManifest(m, 'linux-x86_64'), isNull);
+    expect(UpdateRelease.fromManifest(m, 'armeabi-v7a'), isNotNull);
+  });
+
+  test('the AppImage: installed in place, then restart to finish', () async {
+    phone
+      ..linux = true
+      ..apkVersionCode = 0; // an AppImage doesn't say; update.json does
+    await up().check(manual: true);
+    await up().download();
+    expect(state(), isA<UpdateReady>());
+    await up().install();
+    phone.result(InstallResult.success);
+    await pumpEventQueue();
+    expect(state(), isA<UpdateRestartNeeded>());
+
+    // A check now doesn't offer the same update again.
+    await up().check(manual: true);
+    expect(state(), isA<UpdateRestartNeeded>());
   });
 }

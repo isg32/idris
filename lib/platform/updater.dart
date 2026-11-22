@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
+import 'appimage_updater.dart';
 import 'updater_channel.dart';
 
 /// Where each release's `update.json` is: the latest GitHub release of the
@@ -44,7 +45,12 @@ class UpdateRelease {
   static UpdateRelease? fromManifest(Map<String, Object?> j, String? abi) {
     final apks = j['apks'];
     if (apks is! Map) return null;
-    final apk = apks[abi ?? 'arm64-v8a'] ?? apks['arm64-v8a'];
+    // An Android phone of another ABI can fall back to arm64's APK; a PC
+    // (linux-x86_64) takes only its own AppImage, never an APK.
+    final linux = abi != null && abi.startsWith('linux');
+    final apk = linux
+        ? apks[abi]
+        : apks[abi ?? 'arm64-v8a'] ?? apks['arm64-v8a'];
     if (apk is! Map) return null;
     final url = apk['url'], sha = apk['sha256'];
     final size = apk['size'], code = apk['versionCode'];
@@ -145,6 +151,14 @@ class UpdateNeedsPermission extends UpdateState {
   @override
   final UpdateRelease release;
   final String path;
+}
+
+/// Installed in place (the Linux AppImage replaced itself): it takes over
+/// when Idris restarts.
+class UpdateRestartNeeded extends UpdateState {
+  const UpdateRestartNeeded(this.release);
+  @override
+  final UpdateRelease release;
 }
 
 class UpdateInstalling extends UpdateState {
@@ -312,6 +326,8 @@ class Updater extends Notifier<UpdateState> {
     final s = state;
     // Don't interrupt a download or an install.
     if (s is UpdateDownloading || s is UpdateInstalling) return;
+    // Installed already, waiting for a restart: nothing to look for.
+    if (s is UpdateRestartNeeded) return;
     if (s is UpdateChecking) return;
     final last = _saved.checked;
     if (!manual && last != null && deps.now().difference(last) < every) {
@@ -458,7 +474,8 @@ class Updater extends Notifier<UpdateState> {
         );
         return;
       }
-      if (c.versionCode <= me.versionCode) {
+      // 0: the file doesn't say (an AppImage); update.json's is trusted.
+      if (c.versionCode != 0 && c.versionCode <= me.versionCode) {
         apk.deleteSync();
         state = const UpdateUpToDate();
         return;
@@ -535,11 +552,15 @@ class Updater extends Notifier<UpdateState> {
       await deps.platform.install(path);
     } on Object {
       state = UpdateFailed(
-        "Android couldn't start the install. Try again.",
+        "Couldn't start the install. Try again.",
         release: release,
       );
     }
   }
+
+  /// Starts the installed (new) Idris and closes this one (the AppImage,
+  /// after [UpdateRestartNeeded]).
+  Future<void> restart() async => _deps?.platform.restart();
 
   /// Opens Android's "Install unknown apps" switch for Idris.
   Future<void> allowInstalls() async {
@@ -557,8 +578,11 @@ class Updater extends Notifier<UpdateState> {
       case InstallResult.pendingUser:
         state = UpdateInstalling(s.release, s.path, confirming: true);
       case InstallResult.success:
-        // Idris is being replaced and will close.
-        state = UpdateInstalling(s.release, s.path);
+        // Android replaces Idris and closes it; the AppImage replaced
+        // itself and takes over on a restart.
+        state = _deps!.platform.restartsToFinish
+            ? UpdateRestartNeeded(s.release)
+            : UpdateInstalling(s.release, s.path);
       case InstallResult.aborted:
         state = UpdateReady(s.release, s.path);
       default:
@@ -569,7 +593,7 @@ class Updater extends Notifier<UpdateState> {
               ? "This update doesn't fit this phone."
               : r.code == 6
               ? 'Not enough space on the phone to install it.'
-              : "Android couldn't install it${r.message == null ? '' : ' (${r.message})'}. Try again.",
+              : "Couldn't install it${r.message == null ? '' : ' (${r.message})'}. Try again.",
           release: s.release,
         );
     }
@@ -656,9 +680,15 @@ class _Saved {
 
 /// The real [UpdateDeps] on Android.
 UpdateDeps? phoneUpdateDeps() {
-  if (!Platform.isAndroid) return null;
+  final UpdatePlatform? platform = Platform.isAndroid
+      ? ChannelUpdatePlatform()
+      // Only the AppImage updates itself; a development build doesn't.
+      : Platform.isLinux
+      ? AppImageUpdatePlatform.running()
+      : null;
+  if (platform == null) return null;
   return UpdateDeps(
-    platform: ChannelUpdatePlatform(),
+    platform: platform,
     client: http.Client(),
     dir: getApplicationSupportDirectory,
   );

@@ -14,4 +14,14 @@ void main() {
     expect(match, isNotNull);
     expect(kAppVersion, match!.group(1));
   });
+
+  test('The build number is the pubspec one', () {
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+    final match = RegExp(
+      r'^version:\s*[0-9.]+\+([0-9]+)',
+      multiLine: true,
+    ).firstMatch(pubspec);
+    expect(match, isNotNull);
+    expect(kAppBuild, int.parse(match!.group(1)!));
+  });
 }

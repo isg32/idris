@@ -125,10 +125,17 @@ jobs:
           "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
             | grep -q "Android Debug" && { echo "Signed with the debug key" >&2; exit 1; } || true
 
+      # The AppImage from the appimage job: it goes in update.json and the
+      # release.
+      - uses: actions/download-artifact@v4
+        with:
+          name: appimage
+          path: build/appimage
+
       # update.json is what Idris reads to update itself (lib/platform/updater.dart):
       # each APK's URL, size, SHA-256 and versionCode (read from the APK, since
-      # --split-per-abi adds 1000 × the ABI), and the commits since the last
-      # release as "What's new".
+      # --split-per-abi adds 1000 × the ABI), the AppImage's (linux-x86_64, by
+      # build number), and the commits since the last release as "What's new".
       - name: Write the update manifest
         env:
           TAG: v${{ steps.version.outputs.VERSION }}-${{ steps.version.outputs.SHA }}
@@ -163,6 +170,16 @@ jobs:
               line = re.sub(r"\s*\(\d+\.\d+\.\d+\)\s*$", "", line.strip())
               if line and line not in notes:
                   notes.append(line)
+          # The Linux AppImage: its "versionCode" is the build number (the
+          # pubspec's +N), which the AppImage compares with its own.
+          appimage = "build/appimage/Idris-x86_64.AppImage"
+          build = int(open("pubspec.yaml").read().split("version:")[1].split("+")[1].split()[0])
+          apks["linux-x86_64"] = {
+              "url": f"https://github.com/{repo}/releases/download/{tag}/Idris-x86_64.AppImage",
+              "sha256": hashlib.sha256(open(appimage, "rb").read()).hexdigest(),
+              "size": os.path.getsize(appimage),
+              "versionCode": build,
+          }
           manifest = {
               "version": version,
               "build": apks["arm64-v8a"]["versionCode"] % 1000,
@@ -192,11 +209,6 @@ jobs:
       - name: Remove the keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/release-key.jks"
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: appimage
-          path: build/appimage
 
       - name: Create release
         uses: softprops/action-gh-release@v2

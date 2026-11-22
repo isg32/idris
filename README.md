@@ -6,7 +6,7 @@
 
 **Your mantras and calm music, from your own YouTube playlists — and nothing else.**
 
-![Version](https://img.shields.io/badge/version-2.1.0-000000?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.2.0-000000?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/isg32/idris?style=flat-square&color=000000&label=release)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-000000?style=flat-square&logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android%20%C2%B7%20Linux-000000?style=flat-square&logo=android&logoColor=white)
@@ -200,6 +200,7 @@ check update.json ──► newer versionCode for this ABI? ──► card on Ho
 ```
 
 - Android closes the running app while it replaces it, so playback stops for the install; it's back with one tap on the notification.
+- **The Linux AppImage updates itself too,** from update.json's `linux-x86_64` entry (its version is the build number, the pubspec's `+N`, kept in step with `kAppBuild` by `test/version_test.dart`). It downloads the new AppImage, checks its size and SHA-256, copies it beside the running one and renames it over it (atomic, so a failed update never leaves a broken app), then offers **Restart Idris**. A PC never takes an Android APK, whatever update.json holds. Development builds (not run as an AppImage) don't update themselves.
 - An update must be signed with the same key as the installed app. A copy signed with another key (a debug build) is told to reinstall once from GitHub.
 - Copies older than 1.2.0 have no updater: install 1.2.0 by hand once, and later versions come by themselves.
 - To test against a local server: `flutter build apk --release --split-per-abi --target-platform android-arm64 --dart-define=IDRIS_UPDATE_URL=http://127.0.0.1:8765/update.json` and `adb reverse tcp:8765 tcp:8765`. The server must support Range requests.
