@@ -24,6 +24,9 @@ bool isLocal(String videoId) => videoId.startsWith(localPrefix);
 String get localLabel =>
     Platform.isLinux ? 'On this computer' : 'On this phone';
 
+/// [localLabel] in one word, for a tablet's rail.
+String get localShortLabel => Platform.isLinux ? 'Computer' : 'Phone';
+
 /// The ID for the file at [uri]: stable, so plays and covers stay with it.
 String localId(String uri) =>
     '$localPrefix${sha1.convert(utf8.encode(uri)).toString().substring(0, 20)}';

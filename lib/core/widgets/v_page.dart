@@ -155,7 +155,7 @@ class VTabPage extends StatelessWidget {
                 VSpace.gutter,
                 0,
                 VSpace.gutter,
-                (desktopLayout ? 40 : VSpace.tabBarClearance) +
+                (VLayout.of(context).framed ? 40 : VSpace.tabBarClearance) +
                     VBottomInset.of(context),
               ),
               sliver: SliverList.list(children: _gapped(children)),
@@ -178,9 +178,13 @@ class VDetailPage extends StatelessWidget {
     this.action,
     this.titleStyle,
     this.onRefresh,
+    this.onBack,
   });
 
   final String backLabel;
+
+  /// What "‹ [backLabel]" does; by default it goes back a page.
+  final VoidCallback? onBack;
   final String title;
   final Widget? action;
   final TextStyle? titleStyle;
@@ -204,7 +208,7 @@ class VDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  VBackLink(backLabel),
+                  VBackLink(backLabel, onTap: onBack),
                   Padding(
                     padding: const EdgeInsets.only(top: 0),
                     child: Transform.translate(
@@ -247,7 +251,22 @@ class _UnderStatusBar extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          child: SafeArea(top: false, bottom: bottomSafe, child: child),
+          child: SafeArea(
+            top: false,
+            bottom: bottomSafe,
+            // In a tablet or desktop window, pages take a share of the
+            // width and the rest is margin.
+            child: VLayout.of(context).framed
+                ? LayoutBuilder(
+                    builder: (context, c) => Align(
+                      alignment: Alignment.topCenter,
+                      // 92% of the space, so lines stay a readable length
+                      // on a wide window.
+                      child: SizedBox(width: c.maxWidth * 0.92, child: child),
+                    ),
+                  )
+                : child,
+          ),
         ),
         const Positioned(left: 0, right: 0, top: 0, child: VStatusBarBlur()),
       ],

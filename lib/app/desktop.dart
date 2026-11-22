@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/format.dart';
 import '../core/icons/v_icons.dart';
+import '../core/layout.dart';
 import '../core/theme/v_colors.dart';
 import '../core/theme/v_text.dart';
 import '../core/theme/v_tokens.dart';
@@ -21,39 +22,67 @@ import 'router.dart';
 /// playlists), the page in the middle (no wider than reads well), and a
 /// now-playing bar along the bottom. Every page, the player included,
 /// opens beside the sidebar.
-class DesktopFrame extends StatelessWidget {
+class DesktopFrame extends StatefulWidget {
   const DesktopFrame({super.key, required this.router, required this.child});
 
   final GoRouter router;
   final Widget child;
 
-  /// Pages are no wider than this; the window's extra width is margin.
-  static const double pageWidth = 1120;
+  @override
+  State<DesktopFrame> createState() => _DesktopFrameState();
+}
+
+class _DesktopFrameState extends State<DesktopFrame> {
+  GoRouter get router => widget.router;
+  bool _player = false;
+
+  @override
+  void initState() {
+    super.initState();
+    router.routerDelegate.addListener(_moved);
+  }
+
+  @override
+  void dispose() {
+    router.routerDelegate.removeListener(_moved);
+    super.dispose();
+  }
+
+  /// The full player has the controls: the bar steps aside while it's
+  /// open. (The router can move mid-build, so this waits for the frame.)
+  void _moved() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final player = _here(router) == Routes.player;
+      if (mounted && player != _player) setState(() => _player = player);
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ink = VInk.of(context);
     final line = BorderSide(color: ink, width: VSpace.hairline);
+    // A tablet gets a rail of section icons; a desktop, the full sidebar.
+    final rail = VLayout.of(context) == VLayout.tablet;
+    final width = MediaQuery.sizeOf(context).width;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         DecoratedBox(
           decoration: BoxDecoration(border: Border(right: line)),
-          child: SizedBox(width: 248, child: _Sidebar(router)),
+          child: SizedBox(
+            // Shares of the window: a slim rail, or a fifth for the sidebar.
+            width: rail
+                ? (width * 0.1).clamp(72.0, 96.0)
+                : (width * 0.19).clamp(200.0, 320.0),
+            child: _Sidebar(router, rail: rail),
+          ),
         ),
         Expanded(
           child: Column(
             children: [
-              Expanded(
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: pageWidth),
-                    child: child,
-                  ),
-                ),
-              ),
-              _NowPlayingBar(router),
+              Expanded(child: widget.child),
+              if (!_player) _NowPlayingBar(router),
             ],
           ),
         ),
@@ -62,56 +91,98 @@ class DesktopFrame extends StatelessWidget {
   }
 }
 
-/// Where the router is, to light the sidebar's row for it.
-String _here(GoRouter router) =>
-    router.routerDelegate.currentConfiguration.uri.path;
+/// The page on top, pushed pages (a playlist, the player) included.
+String _here(GoRouter router) {
+  final config = router.routerDelegate.currentConfiguration;
+  return config.lastOrNull?.matchedLocation ?? config.uri.path;
+}
 
-class _Sidebar extends ConsumerWidget {
-  const _Sidebar(this.router);
+class _Sidebar extends ConsumerStatefulWidget {
+  const _Sidebar(this.router, {required this.rail});
   final GoRouter router;
 
+  /// Icons with small labels under them, and no playlists (a tablet).
+  final bool rail;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Sidebar> createState() => _SidebarState();
+}
+
+class _SidebarState extends ConsumerState<_Sidebar> {
+  GoRouter get router => widget.router;
+  bool get rail => widget.rail;
+
+  @override
+  void initState() {
+    super.initState();
+    router.routerDelegate.addListener(_moved);
+  }
+
+  @override
+  void dispose() {
+    router.routerDelegate.removeListener(_moved);
+    super.dispose();
+  }
+
+  /// The router moved. It can say so while the window is being built (its
+  /// first page, at startup), so the sidebar redraws after that frame.
+  void _moved() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final playlists = ref.watch(playlistsProvider).value ?? const [];
-    return ListenableBuilder(
-      listenable: router.routerDelegate,
-      builder: (context, _) {
+    return Builder(
+      builder: (context) {
         final here = _here(router);
+        final top = MediaQuery.paddingOf(context).top;
         return CustomScrollView(
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 28, 12, 8),
+              padding: rail
+                  ? EdgeInsets.fromLTRB(8, 20 + top, 8, 8)
+                  : EdgeInsets.fromLTRB(20, 28 + top, 12, 8),
               sliver: SliverList.list(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8, bottom: 20),
-                    child: Text('Idris', style: VText.doto(30, weight: 800)),
-                  ),
+                  if (!rail)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8, bottom: 20),
+                      child: Text('Idris', style: VText.doto(30, weight: 800)),
+                    ),
                   _Item(
+                    rail: rail,
                     icon: VIcon.home,
                     label: 'Home',
                     on: here == Routes.home,
                     onTap: () => router.go(Routes.home),
                   ),
                   _Item(
+                    rail: rail,
                     icon: VIcon.library,
                     label: 'Library',
                     on: here == Routes.library,
                     onTap: () => router.go(Routes.library),
                   ),
                   _Item(
+                    rail: rail,
                     icon: VIcon.phone,
-                    label: localLabel,
+                    // A rail has room for one short word.
+                    label: rail ? localShortLabel : localLabel,
                     on: here == Routes.local,
                     onTap: () => _open(Routes.local),
                   ),
                   _Item(
+                    rail: rail,
                     icon: VIcon.gear,
                     label: 'Settings',
                     on: here == Routes.settings,
                     onTap: () => router.go(Routes.settings),
                   ),
-                  if (playlists.isNotEmpty)
+                  if (playlists.isNotEmpty && !rail)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(8, 28, 8, 8),
                       child: Text('PLAYLISTS', style: VText.eyebrow),
@@ -122,7 +193,7 @@ class _Sidebar extends ConsumerWidget {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(20, 0, 12, 24),
               sliver: SliverList.builder(
-                itemCount: playlists.length,
+                itemCount: rail ? 0 : playlists.length,
                 itemBuilder: (context, i) {
                   final s = playlists[i];
                   final route = Routes.playlist(s.id);
@@ -141,20 +212,16 @@ class _Sidebar extends ConsumerWidget {
     );
   }
 
-  /// Opens a page over the current section, or swaps it if one is open.
+  /// Switches to [route], as the sections do: never stacked, so a second
+  /// click can't open it twice.
   void _open(String route) {
-    final here = _here(router);
-    if (here == route) return;
-    if (here.startsWith('/playlist/') || here == Routes.local) {
-      router.pushReplacement(route);
-    } else {
-      router.push(route);
-    }
+    if (_here(router) != route) router.go(route);
   }
 }
 
 class _Item extends StatelessWidget {
   const _Item({
+    this.rail = false,
     required this.label,
     required this.on,
     required this.onTap,
@@ -168,29 +235,49 @@ class _Item extends StatelessWidget {
   final bool on;
   final VoidCallback onTap;
 
+  /// Icon over a small label (a tablet's rail).
+  final bool rail;
+
   @override
   Widget build(BuildContext context) {
-    final row = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-      child: Row(
-        children: [
-          leading ??
-              SizedBox.square(
-                dimension: 32,
-                child: Center(child: VIconView(icon!, size: 20)),
-              ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: VText.inter(14, weight: on ? 600 : 400),
+    final row = rail
+        ? Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              children: [
+                VIconView(icon!, size: 22),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: VText.inter(10.5, weight: on ? 600 : 400),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-    );
+          )
+        : Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+            child: Row(
+              children: [
+                leading ??
+                    SizedBox.square(
+                      dimension: 32,
+                      child: Center(child: VIconView(icon!, size: 20)),
+                    ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VText.inter(14, weight: on ? 600 : 400),
+                  ),
+                ),
+              ],
+            ),
+          );
     return Semantics(
       button: true,
       selected: on,
@@ -245,9 +332,14 @@ class _NowPlayingBar extends ConsumerWidget {
         ),
       ),
       child: SizedBox(
-        height: 84,
+        height: 84 + MediaQuery.paddingOf(context).bottom,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            MediaQuery.paddingOf(context).bottom,
+          ),
           child: Row(
             children: [
               Expanded(

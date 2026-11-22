@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/icons/v_icons.dart';
+import '../../core/layout.dart';
 import '../../core/theme/v_text.dart';
+import '../../core/theme/v_tokens.dart';
 import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_controls.dart';
 import '../../core/widgets/v_glass.dart';
@@ -69,15 +71,17 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       children: _offline
           ? const [_OfflineTracks()]
           : [
-              LocalCard(onTap: () => context.push(Routes.local)),
+              ..._grid(context, [
+                LocalCard(onTap: () => context.push(Routes.local)),
+                for (final s in playlists)
+                  PlaylistCard(
+                    summary: s,
+                    onLongPress: () => showPlaylistActions(context, ref, s),
+                  ),
+              ]),
               if (playlists.isEmpty)
                 const VFootnote(
                   'No playlists yet. Tap + and paste a YouTube playlist link.',
-                ),
-              for (final s in playlists)
-                PlaylistCard(
-                  summary: s,
-                  onLongPress: () => showPlaylistActions(context, ref, s),
                 ),
               if (playlists.isNotEmpty)
                 const VFootnote(
@@ -293,4 +297,31 @@ Future<void> _rename(
     ),
   );
   controller.dispose();
+}
+
+/// [cards] as a grid that uses the width: one across on a phone, two on a
+/// tablet, three on a desktop.
+List<Widget> _grid(BuildContext context, List<Widget> cards) {
+  final across = switch (VLayout.of(context)) {
+    VLayout.mobile => 1,
+    VLayout.tablet => 2,
+    VLayout.desktop => 3,
+  };
+  if (across == 1) return cards;
+  return [
+    for (var i = 0; i < cards.length; i += across)
+      IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var j = i; j < i + across; j++) ...[
+              if (j > i) const SizedBox(width: VSpace.cardGap),
+              Expanded(
+                child: j < cards.length ? cards[j] : const SizedBox.shrink(),
+              ),
+            ],
+          ],
+        ),
+      ),
+  ];
 }

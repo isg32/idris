@@ -74,7 +74,7 @@ class _AppShellState extends State<AppShell> {
     final shell = widget.shell;
     // On a desktop the sidebar and now-playing bar (DesktopFrame) stand in
     // for the tab bar and mini player.
-    if (desktopLayout) {
+    if (VLayout.of(context).framed) {
       return Stack(
         children: [
           Positioned.fill(child: shell),

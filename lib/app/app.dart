@@ -98,7 +98,7 @@ class _IdrisAppState extends ConsumerState<IdrisApp>
             child: ColoredBox(
               color: p.paper,
               child: CrashOverlay(
-                child: desktopLayout
+                child: VLayout.of(context).framed
                     ? DesktopFrame(
                         router: widget.router,
                         child: child ?? const SizedBox.shrink(),

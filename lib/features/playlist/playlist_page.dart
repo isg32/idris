@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../app/router.dart';
 import '../../core/icons/v_icons.dart';
 import '../../core/layout.dart';
 import '../../core/theme/v_text.dart';
@@ -49,128 +51,142 @@ class PlaylistPage extends ConsumerWidget {
     final bottom = MediaQuery.paddingOf(context).bottom;
     final page = VDetailPage(
       backLabel: 'Library',
+      // Opened from the desktop sidebar there's no page behind: Library.
+      onBack: () =>
+          context.canPop() ? context.pop() : context.go(Routes.library),
       title: playlist.title,
       onRefresh: () async => ref.read(syncOneProvider)(id),
-      children: [
-        Row(
-          children: [
-            // Tap the cover to change it.
-            VTappable(
-              onTap: () => _coverActions(context, ref, playlist),
-              child: PlaylistCover(playlist, size: 96, radius: 18),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                '${tracks.length} tracks · '
-                '${totalLength(Duration(milliseconds: total))}$synced',
-                style: VText.inter(13, weight: 300),
-              ),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: VButton.primary(
-                'Play',
-                enabled: tracks.isNotEmpty,
-                onPressed: () => playTracks(
-                  context,
-                  ref,
-                  tracks,
-                  source: playlist.title,
-                  dock: 12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: VButton.secondary(
-                'Shuffle',
-                enabled: tracks.isNotEmpty,
-                onPressed: () => playTracks(
-                  context,
-                  ref,
-                  tracks,
-                  index: tracks.isEmpty
-                      ? 0
-                      : DateTime.now().microsecond % tracks.length,
-                  source: playlist.title,
-                  dock: 12,
-                  shuffle: true,
-                ),
-              ),
-            ),
-          ],
-        ),
-        VCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: asideAndMain(
+        context,
+        aside: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Available offline', style: VText.rowTitle),
-                        const SizedBox(height: 3),
-                        Text(offlineLine, style: VText.secondary),
-                      ],
-                    ),
-                  ),
-                  VSwitch(
-                    value: playlist.pinned,
-                    onChanged: (v) async {
-                      await ref.read(libraryProvider).setPlaylistPinned(id, v);
-                      ref.read(cacheManagerProvider).kick();
-                    },
-                  ),
-                ],
+              // Tap the cover to change it.
+              VTappable(
+                onTap: () => _coverActions(context, ref, playlist),
+                child: PlaylistCover(playlist, size: 96, radius: 18),
               ),
-              if (playlist.pinned && tracks.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                VBar(value: cached / tracks.length),
-              ],
-              if (cached > 0) ...[
-                const SizedBox(height: 12),
-                VButton.ghost(
-                  'Remove downloads',
-                  onPressed: () =>
-                      confirmRemoveDownloads(context, ref, playlist),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  '${tracks.length} tracks · '
+                  '${totalLength(Duration(milliseconds: total))}$synced',
+                  style: VText.inter(13, weight: 300),
                 ),
-              ],
+              ),
             ],
           ),
-        ),
-        if (tracks.isEmpty)
-          const VFootnote('This playlist is empty on YouTube.')
-        else
-          VListSection(
+          Row(
             children: [
-              for (final (i, t) in tracks.indexed)
-                TrackRow(
-                  track: t,
-                  number: i + 1,
-                  onTap: () => playTracks(
+              Expanded(
+                child: VButton.primary(
+                  'Play',
+                  enabled: tracks.isNotEmpty,
+                  onPressed: () => playTracks(
                     context,
                     ref,
                     tracks,
-                    index: i,
                     source: playlist.title,
                     dock: 12,
                   ),
-                  onLongPress: () =>
-                      showTrackActions(context, ref, t, source: playlist.title),
                 ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: VButton.secondary(
+                  'Shuffle',
+                  enabled: tracks.isNotEmpty,
+                  onPressed: () => playTracks(
+                    context,
+                    ref,
+                    tracks,
+                    index: tracks.isEmpty
+                        ? 0
+                        : DateTime.now().microsecond % tracks.length,
+                    source: playlist.title,
+                    dock: 12,
+                    shuffle: true,
+                  ),
+                ),
+              ),
             ],
           ),
-        const VFootnote('Long-press a track for more.'),
-      ],
+          VCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Available offline', style: VText.rowTitle),
+                          const SizedBox(height: 3),
+                          Text(offlineLine, style: VText.secondary),
+                        ],
+                      ),
+                    ),
+                    VSwitch(
+                      value: playlist.pinned,
+                      onChanged: (v) async {
+                        await ref
+                            .read(libraryProvider)
+                            .setPlaylistPinned(id, v);
+                        ref.read(cacheManagerProvider).kick();
+                      },
+                    ),
+                  ],
+                ),
+                if (playlist.pinned && tracks.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  VBar(value: cached / tracks.length),
+                ],
+                if (cached > 0) ...[
+                  const SizedBox(height: 12),
+                  VButton.ghost(
+                    'Remove downloads',
+                    onPressed: () =>
+                        confirmRemoveDownloads(context, ref, playlist),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+        main: [
+          if (tracks.isEmpty)
+            const VFootnote('This playlist is empty on YouTube.')
+          else
+            VListSection(
+              children: [
+                for (final (i, t) in tracks.indexed)
+                  TrackRow(
+                    track: t,
+                    number: i + 1,
+                    onTap: () => playTracks(
+                      context,
+                      ref,
+                      tracks,
+                      index: i,
+                      source: playlist.title,
+                      dock: 12,
+                    ),
+                    onLongPress: () => showTrackActions(
+                      context,
+                      ref,
+                      t,
+                      source: playlist.title,
+                    ),
+                  ),
+              ],
+            ),
+          const VFootnote('Long-press a track for more.'),
+        ],
+      ),
     );
     // On a desktop the now-playing bar is the window's own.
-    if (!mini || desktopLayout) return page;
+    if (!mini || VLayout.of(context).framed) return page;
     return Stack(
       children: [
         VBottomInset(extra: miniPlayerHeight + 12, child: page),

@@ -81,8 +81,13 @@ class _PlayerSheetState extends State<PlayerSheet>
   }
 
   @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
+  Widget build(BuildContext context) => LayoutBuilder(
+    // The space the panel has (beside a tablet's or desktop's sidebar, not
+    // the whole window): it grows to fill exactly this.
+    builder: (context, c) => _panel(context, c.biggest),
+  );
+
+  Widget _panel(BuildContext context, Size size) {
     final pad = MediaQuery.paddingOf(context);
     final full = Offset.zero & size;
     final mini = Rect.fromLTWH(

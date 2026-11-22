@@ -53,9 +53,9 @@ static void my_application_activate(GApplication* application) {
   }
 
   gtk_window_set_default_size(window, 1280, 800);
-  // Narrower than this, the desktop layout has no room for its sidebar.
+  // As small as a phone: narrow windows get the mobile layout.
   GdkGeometry min = {};
-  min.min_width = 720;
+  min.min_width = 360;
   min.min_height = 520;
   gtk_window_set_geometry_hints(window, nullptr, &min, GDK_HINT_MIN_SIZE);
 

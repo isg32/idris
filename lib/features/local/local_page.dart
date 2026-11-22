@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../app/router.dart';
 import '../../core/icons/v_icons.dart';
 import '../../core/layout.dart';
 import '../../core/theme/v_text.dart';
@@ -55,11 +57,9 @@ class _LocalPageState extends ConsumerState<LocalPage> {
     final mini = ref.watch(sessionProvider.select((s) => s.active));
     final bottom = MediaQuery.paddingOf(context).bottom;
 
-    final page = VDetailPage(
-      backLabel: 'Library',
-      title: _source,
-      onRefresh: () => _busy(music.scanAll),
-      children: [
+    final body = asideAndMain(
+      context,
+      aside: [
         Text(
           tracks.isEmpty
               ? 'Music from folders on this phone'
@@ -124,6 +124,8 @@ class _LocalPageState extends ConsumerState<LocalPage> {
         ),
         if (folders.isNotEmpty && tracks.isEmpty && !_reading)
           const VFootnote('No audio files in these folders yet.'),
+      ],
+      main: [
         if (tracks.isNotEmpty)
           VListSection(
             children: [
@@ -151,8 +153,25 @@ class _LocalPageState extends ConsumerState<LocalPage> {
         ),
       ],
     );
+    // In a tablet or desktop window it's a section in the sidebar, as Home
+    // and Library are: a section's title, no back link. On a phone it's a
+    // page opened from Library.
+    final Widget page = VLayout.of(context).framed
+        ? VTabPage(
+            title: _source,
+            onRefresh: () => _busy(music.scanAll),
+            children: body,
+          )
+        : VDetailPage(
+            backLabel: 'Library',
+            onBack: () =>
+                context.canPop() ? context.pop() : context.go(Routes.library),
+            title: _source,
+            onRefresh: () => _busy(music.scanAll),
+            children: body,
+          );
     // On a desktop the now-playing bar is the window's own.
-    if (!mini || desktopLayout) return page;
+    if (!mini || VLayout.of(context).framed) return page;
     return Stack(
       children: [
         VBottomInset(extra: miniPlayerHeight + 12, child: page),

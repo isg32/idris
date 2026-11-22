@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../app/router.dart';
 import '../core/format.dart';
 import '../core/icons/v_icons.dart';
+import '../core/layout.dart';
 import '../core/theme/v_text.dart';
 import '../core/theme/v_tokens.dart';
 import '../core/widgets/v_buttons.dart';
@@ -275,6 +276,37 @@ Future<void> confirmRemoveDownloads(
       ],
     ),
   );
+}
+
+/// A page's parts in the desktop layout: [aside] (the cover, details and
+/// actions) in a column on the left, [main] (the tracks) beside it.
+/// Narrower, one under the other.
+List<Widget> asideAndMain(
+  BuildContext context, {
+  required List<Widget> aside,
+  required List<Widget> main,
+}) {
+  if (VLayout.of(context) != VLayout.desktop) return [...aside, ...main];
+  Widget column(List<Widget> parts) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (final (i, w) in parts.indexed) ...[
+        if (i > 0) const SizedBox(height: VSpace.cardGap),
+        w,
+      ],
+    ],
+  );
+  // About a third for the aside, the rest for the tracks.
+  return [
+    Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 32, child: column(aside)),
+        const Spacer(flex: 3),
+        Expanded(flex: 65, child: column(main)),
+      ],
+    ),
+  ];
 }
 
 /// The small glyph at the end of a track row.

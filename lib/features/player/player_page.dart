@@ -8,6 +8,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../../core/format.dart';
 import '../../core/icons/v_icons.dart';
+import '../../core/layout.dart';
 import '../../core/theme/v_colors.dart';
 import '../../core/theme/v_palette.dart';
 import '../../core/theme/v_text.dart';
@@ -17,6 +18,7 @@ import '../../core/widgets/v_ink.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../common.dart';
 import '../../platform/audio_handler.dart';
 import '../../platform/playback_rules.dart';
 import 'player_sheet.dart';
@@ -96,174 +98,257 @@ class PlayerPage extends ConsumerWidget {
     double bottom,
     String eyebrow,
   ) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, top + 12, 20, bottom + 24),
-      child: t == null
-          ? _Ended(onBack: () => PlayerSheet.close(context))
-          : Column(
+    final pad = EdgeInsets.fromLTRB(20, top + 12, 20, bottom + 24);
+    if (t == null) {
+      return Padding(
+        padding: pad,
+        child: _Ended(onBack: () => PlayerSheet.close(context)),
+      );
+    }
+    final header = <Widget>[
+      Row(
+        children: [
+          VTappable(
+            onTap: () => PlayerSheet.close(context),
+            child: Row(
+              children: [
+                const VIconView(VIcon.down, size: 16),
+                const SizedBox(width: 4),
+                Text('Back', style: VText.inter(14)),
+              ],
+            ),
+          ),
+          const Spacer(),
+          Text('${s.index + 1} OF ${s.queue.length}', style: VText.eyebrow),
+        ],
+      ),
+    ];
+    final info = <Widget>[
+      Text(eyebrow, style: VText.eyebrow),
+      const SizedBox(height: 10),
+      Text(
+        t.title,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: VText.inter(28, weight: 300, height: 1.2),
+      ),
+      if (t.channel.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Text(t.channel, style: VText.inter(13, weight: 300)),
+      ],
+    ];
+    final time = <Widget>[
+      Text(
+        _clock(s.loading ? Duration.zero : pos),
+        style: VText.doto(56, weight: 900, height: 1),
+      ),
+      const SizedBox(height: 12),
+      _SeekBar(
+        position: pos,
+        duration: dur,
+        onSeek: (d) => unawaited(handler.seek(d)),
+      ),
+      const SizedBox(height: 10),
+      Text(
+        s.loading
+            ? 'Opening…'
+            : buffering
+            ? 'Buffering…'
+            : dur == null
+            ? ''
+            : 'of ${VFormat.clock(dur)}',
+        style: VText.secondary,
+      ),
+      if (s.problem != null) ...[
+        const SizedBox(height: 18),
+        VCard(
+          outline: VOutline.dashed,
+          child: Text(s.problem!, style: VText.inter(15, weight: 500)),
+        ),
+      ] else if (s.repeatTarget != null) ...[
+        const SizedBox(height: 22),
+        _RepeatCounter(
+          done: s.repeatDone,
+          target: s.repeatTarget!,
+          then: s.repeatEnd.name == 'stop' ? 'then stop' : 'then next track',
+        ),
+      ],
+    ];
+    final transport = <Widget>[
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          VCircleButton(
+            icon: VIcon.previous,
+            size: 56,
+            onTap: () => unawaited(handler.skipToPrevious()),
+          ),
+          const SizedBox(width: 28),
+          Opacity(
+            opacity: s.loading ? VColors.disabledOpacity : 1,
+            child: VCircleButton(
+              icon: playing ? VIcon.pause : VIcon.play,
+              filled: true,
+              size: 84,
+              onTap: s.loading ? null : () => unawaited(handler.toggle()),
+            ),
+          ),
+          const SizedBox(width: 28),
+          Opacity(
+            opacity: s.canSkip ? 1 : VColors.disabledOpacity,
+            child: VCircleButton(
+              icon: VIcon.next,
+              size: 56,
+              onTap: s.canSkip ? () => unawaited(handler.skipToNext()) : null,
+            ),
+          ),
+        ],
+      ),
+    ];
+    final modes = <Widget>[
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _Mode(
+            label: switch (s.loop) {
+              Loop.off => 'Loop',
+              Loop.all => 'Playlist',
+              Loop.one => 'This one',
+            },
+            icon: s.loop == Loop.one ? VIcon.loop : VIcon.loopAll,
+            on: s.loop != Loop.off,
+            onTap: handler.cycleLoop,
+          ),
+          _Mode(
+            label: 'Repeat',
+            icon: VIcon.repeatCount,
+            text: s.repeatTarget == null ? null : '×${s.repeatTarget}',
+            on: s.repeatTarget != null,
+            onTap: () => showRepeatSheet(context, ref),
+          ),
+          _Mode(
+            label: 'Sleep',
+            icon: VIcon.timer,
+            text: _sleepText(s.sleepEndsAt, s.sleepAtEndOfTrack),
+            on: s.sleepEndsAt != null || s.sleepAtEndOfTrack,
+            onTap: () => showSleepSheet(context, ref),
+          ),
+          _Mode(
+            label: 'Shuffle',
+            icon: VIcon.shuffle,
+            on: s.shuffle,
+            onTap: () => handler.setShuffle(!s.shuffle),
+          ),
+          _Mode(
+            label: 'Queue',
+            icon: VIcon.queue,
+            on: false,
+            onTap: () => showQueueSheet(context, ref),
+          ),
+        ],
+      ),
+    ];
+    final stop = <Widget>[
+      VButton.ghost(
+        'Stop session',
+        onPressed: () async {
+          await handler.stop();
+          if (context.mounted) await PlayerSheet.close(context);
+        },
+      ),
+    ];
+
+    // A tablet or desktop window: the cover on top, on the left, and the
+    // track, time and controls under it. Every size is a share of the
+    // player's space, worked out as the window changes; the cover takes
+    // the height the rest leaves, so everything always fits.
+    if (VLayout.of(context).framed) {
+      return LayoutBuilder(
+        builder: (context, c) {
+          final w = c.maxWidth, h = c.maxHeight;
+          final gap = h * 0.022;
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              w * 0.05,
+              h * 0.025,
+              w * 0.05,
+              h * 0.03,
+            ),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
                   children: [
-                    VTappable(
-                      onTap: () => PlayerSheet.close(context),
-                      child: Row(
-                        children: [
-                          const VIconView(VIcon.down, size: 16),
-                          const SizedBox(width: 4),
-                          Text('Back', style: VText.inter(14)),
-                        ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: header,
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      '${s.index + 1} OF ${s.queue.length}',
-                      style: VText.eyebrow,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 36),
-                Text(eyebrow, style: VText.eyebrow),
-                const SizedBox(height: 10),
-                Text(
-                  t.title,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: VText.inter(28, weight: 300, height: 1.2),
-                ),
-                if (t.channel.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(t.channel, style: VText.inter(13, weight: 300)),
-                ],
-                const SizedBox(height: 32),
-                Text(
-                  _clock(s.loading ? Duration.zero : pos),
-                  style: VText.doto(56, weight: 900, height: 1),
-                ),
-                const SizedBox(height: 12),
-                _SeekBar(
-                  position: pos,
-                  duration: dur,
-                  onSeek: (d) => unawaited(handler.seek(d)),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  s.loading
-                      ? 'Opening…'
-                      : buffering
-                      ? 'Buffering…'
-                      : dur == null
-                      ? ''
-                      : 'of ${VFormat.clock(dur)}',
-                  style: VText.secondary,
-                ),
-                if (s.problem != null) ...[
-                  const SizedBox(height: 18),
-                  VCard(
-                    outline: VOutline.dashed,
-                    child: Text(
-                      s.problem!,
-                      style: VText.inter(15, weight: 500),
-                    ),
-                  ),
-                ] else if (s.repeatTarget != null) ...[
-                  const SizedBox(height: 22),
-                  _RepeatCounter(
-                    done: s.repeatDone,
-                    target: s.repeatTarget!,
-                    then: s.repeatEnd.name == 'stop'
-                        ? 'then stop'
-                        : 'then next track',
-                  ),
-                ],
-                const Spacer(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    VCircleButton(
-                      icon: VIcon.previous,
-                      size: 56,
-                      onTap: () => unawaited(handler.skipToPrevious()),
-                    ),
-                    const SizedBox(width: 28),
-                    Opacity(
-                      opacity: s.loading ? VColors.disabledOpacity : 1,
-                      child: VCircleButton(
-                        icon: playing ? VIcon.pause : VIcon.play,
-                        filled: true,
-                        size: 84,
-                        onTap: s.loading
-                            ? null
-                            : () => unawaited(handler.toggle()),
-                      ),
-                    ),
-                    const SizedBox(width: 28),
-                    Opacity(
-                      opacity: s.canSkip ? 1 : VColors.disabledOpacity,
-                      child: VCircleButton(
-                        icon: VIcon.next,
-                        size: 56,
-                        onTap: s.canSkip
-                            ? () => unawaited(handler.skipToNext())
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _Mode(
-                      label: switch (s.loop) {
-                        Loop.off => 'Loop',
-                        Loop.all => 'Playlist',
-                        Loop.one => 'This one',
+                    SizedBox(width: w * 0.03),
+                    VTextAction(
+                      'Stop session',
+                      onTap: () async {
+                        await handler.stop();
+                        if (context.mounted) await PlayerSheet.close(context);
                       },
-                      icon: s.loop == Loop.one ? VIcon.loop : VIcon.loopAll,
-                      on: s.loop != Loop.off,
-                      onTap: handler.cycleLoop,
-                    ),
-                    _Mode(
-                      label: 'Repeat',
-                      icon: VIcon.repeatCount,
-                      text: s.repeatTarget == null
-                          ? null
-                          : '×${s.repeatTarget}',
-                      on: s.repeatTarget != null,
-                      onTap: () => showRepeatSheet(context, ref),
-                    ),
-                    _Mode(
-                      label: 'Sleep',
-                      icon: VIcon.timer,
-                      text: _sleepText(s.sleepEndsAt, s.sleepAtEndOfTrack),
-                      on: s.sleepEndsAt != null || s.sleepAtEndOfTrack,
-                      onTap: () => showSleepSheet(context, ref),
-                    ),
-                    _Mode(
-                      label: 'Shuffle',
-                      icon: VIcon.shuffle,
-                      on: s.shuffle,
-                      onTap: () => handler.setShuffle(!s.shuffle),
-                    ),
-                    _Mode(
-                      label: 'Queue',
-                      icon: VIcon.queue,
-                      on: false,
-                      onTap: () => showQueueSheet(context, ref),
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
-                VButton.ghost(
-                  'Stop session',
-                  onPressed: () async {
-                    await handler.stop();
-                    if (context.mounted) await PlayerSheet.close(context);
-                  },
+                SizedBox(height: gap),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, cover) {
+                      final side = [
+                        cover.maxHeight,
+                        w * 0.32,
+                      ].reduce((a, b) => a < b ? a : b);
+                      return Align(
+                        alignment: Alignment.bottomLeft,
+                        child: side < 64
+                            ? const SizedBox.shrink()
+                            : TrackArt(
+                                t.videoId,
+                                size: side,
+                                radius: side * 0.06,
+                              ),
+                      );
+                    },
+                  ),
                 ),
+                SizedBox(height: gap * 1.2),
+                ...info,
+                SizedBox(height: gap),
+                ...time,
+                SizedBox(height: gap * 1.2),
+                ...transport,
+                SizedBox(height: gap * 1.2),
+                ...modes,
               ],
             ),
+          );
+        },
+      );
+    }
+
+    return Padding(
+      padding: pad,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ...header,
+          const SizedBox(height: 36),
+          ...info,
+          const SizedBox(height: 32),
+          ...time,
+          const Spacer(),
+          ...transport,
+          const SizedBox(height: 32),
+          ...modes,
+          const SizedBox(height: 28),
+          ...stop,
+        ],
+      ),
     );
   }
 

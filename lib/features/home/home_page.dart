@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/icons/v_icons.dart';
+import '../../core/layout.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/theme/v_tokens.dart';
 import '../../core/widgets/v_buttons.dart';
@@ -35,6 +36,43 @@ class HomePage extends ConsumerWidget {
     }
 
     final empty = playlists != null && playlists.isEmpty;
+    final fresh = added.where((t) => t.isNew).length;
+    final heading = SectionHeading(
+      'Recently added',
+      note: fresh == 0 ? null : '$fresh new',
+    );
+    final rest = <Widget>[
+      if (played.isNotEmpty) ...[
+        const SectionHeading('Recently played'),
+        VListSection(
+          padding: EdgeInsets.zero,
+          children: [
+            for (final p in played)
+              TrackRow(
+                track: p.track,
+                subtitle: [
+                  if (isLocal(p.track.videoId))
+                    localLabel
+                  else if (p.playlistTitle.isNotEmpty)
+                    p.playlistTitle,
+                  'played ${when(p.at)}',
+                ].join(' · '),
+                onTap: () => _playFromPlaylist(context, ref, p),
+                onLongPress: () => showTrackActions(
+                  context,
+                  ref,
+                  p.track,
+                  source: p.playlistTitle,
+                ),
+              ),
+          ],
+        ),
+      ],
+      if (playlists != null && playlists.isNotEmpty) ...[
+        const SectionHeading('Playlists'),
+        for (final s in playlists) PlaylistCard(summary: s),
+      ],
+    ];
     return VTabPage(
       title: 'Idris',
       eyebrow: DateFormat('EEEE d MMMM').format(DateTime.now()).toUpperCase(),
@@ -49,44 +87,41 @@ class HomePage extends ConsumerWidget {
         if (empty) const _Empty(),
         if (lastSync != null && lastSync.added > 0)
           VFootnote('Synced · ${lastSync.added} new'),
-        if (added.isNotEmpty) ...[
-          SectionHeading(
-            'Recently added',
-            note: added.where((t) => t.isNew).isEmpty
-                ? null
-                : '${added.where((t) => t.isNew).length} new',
-          ),
-          _AddedStrip(items: added),
-        ],
-        if (played.isNotEmpty) ...[
-          const SectionHeading('Recently played'),
-          VListSection(
-            padding: EdgeInsets.zero,
+        if (VLayout.of(context) == VLayout.desktop && added.isNotEmpty)
+          // A window has room: Recently added down the left, the rest
+          // beside it.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final p in played)
-                TrackRow(
-                  track: p.track,
-                  subtitle: [
-                    if (isLocal(p.track.videoId))
-                      localLabel
-                    else if (p.playlistTitle.isNotEmpty)
-                      p.playlistTitle,
-                    'played ${when(p.at)}',
-                  ].join(' · '),
-                  onTap: () => _playFromPlaylist(context, ref, p),
-                  onLongPress: () => showTrackActions(
-                    context,
-                    ref,
-                    p.track,
-                    source: p.playlistTitle,
-                  ),
+              Expanded(
+                flex: 30,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    heading,
+                    const SizedBox(height: VSpace.cardGap),
+                    _AddedColumn(items: added),
+                  ],
                 ),
+              ),
+              const Spacer(flex: 3),
+              Expanded(
+                flex: 67,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final w in rest) ...[
+                      w,
+                      const SizedBox(height: VSpace.cardGap),
+                    ],
+                  ],
+                ),
+              ),
             ],
-          ),
-        ],
-        if (playlists != null && playlists.isNotEmpty) ...[
-          const SectionHeading('Playlists'),
-          for (final s in playlists) PlaylistCard(summary: s),
+          )
+        else ...[
+          if (added.isNotEmpty) ...[heading, _AddedStrip(items: added)],
+          ...rest,
         ],
       ],
     );
@@ -114,6 +149,67 @@ Future<void> _playFromPlaylist(
     index: i < 0 ? 0 : i,
     source: local ? localLabel : item.playlistTitle,
   );
+}
+
+/// Recently added as a column (a desktop window's Home): cover, title and
+/// length, one under another.
+class _AddedColumn extends ConsumerWidget {
+  const _AddedColumn({required this.items});
+
+  final List<TrackInPlaylist> items;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final item in items)
+          VTappable(
+            onTap: () => _playFromPlaylist(context, ref, item),
+            onLongPress: () => showTrackActions(
+              context,
+              ref,
+              item.track,
+              source: item.playlistTitle,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  TrackArt(item.track.videoId, size: 64, radius: 12),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.track.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: VText.inter(14, weight: 500, height: 1.25),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          [
+                            if (item.isNew) 'New',
+                            if (item.playlistTitle.isNotEmpty)
+                              item.playlistTitle,
+                            trackLength(item.track),
+                          ].join(' · '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: VText.secondary,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _AddedStrip extends ConsumerWidget {

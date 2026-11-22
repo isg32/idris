@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/layout.dart';
 import '../core/theme/v_tokens.dart';
 import '../features/home/home_page.dart';
 import '../features/library/library_page.dart';
@@ -95,8 +96,11 @@ GoRouter buildRouter({required bool onboarded}) => GoRouter(
     GoRoute(
       parentNavigatorKey: _rootKey,
       path: Routes.local,
-      pageBuilder: (context, state) =>
-          CupertinoPage<void>(key: state.pageKey, child: const LocalPage()),
+      // A section in a tablet's or desktop's sidebar: it switches in, as
+      // Home and Library do, rather than sliding over them.
+      pageBuilder: (context, state) => VLayout.of(context).framed
+          ? NoTransitionPage<void>(key: state.pageKey, child: const LocalPage())
+          : CupertinoPage<void>(key: state.pageKey, child: const LocalPage()),
     ),
     GoRoute(
       parentNavigatorKey: _rootKey,

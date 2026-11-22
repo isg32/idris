@@ -1,9 +1,30 @@
-import 'dart:io';
+import 'package:flutter/widgets.dart';
 
-import 'package:flutter/foundation.dart';
+/// Which of Idris's three layouts fits the window, by its size (so a
+/// phone, a tablet, the Linux app and a resized window each get theirs):
+///
+/// - [mobile]: the phone layout, a tab bar and a mini player.
+/// - [tablet]: a rail of section icons, the now-playing bar along the
+///   bottom, and pages that use the width.
+/// - [desktop]: the sidebar with the playlists, and pages in columns.
+///
+/// A phone on its side is wide but short: it stays [mobile], since a rail
+/// and a bottom bar would leave too little height.
+enum VLayout {
+  mobile,
+  tablet,
+  desktop;
 
-/// On a desktop (Linux), Idris lays itself out for a window: a sidebar and
-/// a now-playing bar around the pages (lib/app/desktop.dart) instead of the
-/// phone's tab bar and mini player. Decided by the platform, not the
-/// window's width, so a phone on its side stays a phone.
-final bool desktopLayout = !kIsWeb && Platform.isLinux;
+  static VLayout of(BuildContext context) =>
+      forSize(MediaQuery.sizeOf(context));
+
+  static VLayout forSize(Size s) {
+    if (s.width >= 1100 && s.height >= 560) return desktop;
+    if (s.width >= 640 && s.height >= 520) return tablet;
+    return mobile;
+  }
+
+  /// The tablet and desktop layouts: the frame around the pages
+  /// (lib/app/desktop.dart) stands in for the tab bar and mini player.
+  bool get framed => this != mobile;
+}
