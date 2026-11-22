@@ -9,6 +9,7 @@ import '../data/models.dart';
 import 'cache_manager.dart';
 import 'local_music.dart';
 import 'playback_rules.dart';
+import 'volume_keys.dart';
 import 'youtube.dart';
 
 /// Where the session is, for the pages.
@@ -121,6 +122,12 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
         unawaited(_trackEnded());
       }
     });
+    // Holding a volume key skips while music plays (Settings).
+    player.playingStream.listen((_) => _volumeMode());
+    library.watchSettings().listen((s) {
+      _volumeSkip = s.volumeSkip;
+      _volumeMode();
+    });
     player.durationStream.listen((d) {
       final t = _s.current;
       if (d == null || t == null) return;
@@ -131,6 +138,40 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
 
   final Library library;
   final CacheManager cache;
+
+  bool _volumeSkip = true;
+  bool? _remoteVolume;
+  late final VolumeKeys _volumeKeys = VolumeKeys(
+    onStep: (direction) =>
+        unawaited(stepMediaVolume(direction).catchError((Object _) {})),
+    onHold: (direction) =>
+        unawaited(direction > 0 ? skipToNext() : previousTrack()),
+  );
+
+  /// While music plays (and Settings allows), the session takes the volume
+  /// keys itself, so Android hands Idris every press, with the screen on
+  /// or off and whatever app is in front: a tap still changes the volume
+  /// ([stepMediaVolume]), a hold skips ([VolumeKeys]). Otherwise the keys
+  /// work as they always do.
+  void _volumeMode() {
+    final remote = _volumeSkip && player.playing;
+    if (remote == _remoteVolume) return;
+    _remoteVolume = remote;
+    androidPlaybackInfo.add(
+      remote
+          ? RemoteAndroidPlaybackInfo(
+              volumeControlType: AndroidVolumeControlType.relative,
+              maxVolume: 100,
+              volume: 50,
+            )
+          : LocalAndroidPlaybackInfo(),
+    );
+  }
+
+  @override
+  Future<void> androidAdjustRemoteVolume(
+    AndroidVolumeDirection direction,
+  ) async => _volumeKeys.press(direction.index);
   final AudioPlayer player = AudioPlayer();
 
   final ValueNotifier<SessionState> session = ValueNotifier(
@@ -329,6 +370,21 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> skipToPrevious() async {
     if (player.position > const Duration(seconds: 3) || _s.index == 0) {
+      await player.seek(Duration.zero);
+      return;
+    }
+    _s = _s.copyWith(
+      index: _s.index - 1,
+      repeatTarget: () => null,
+      repeatDone: 0,
+    );
+    await _open();
+  }
+
+  /// The track before this one, from its start (a volume-key hold: unlike
+  /// the ⏮ button, it never just restarts the track playing).
+  Future<void> previousTrack() async {
+    if (_s.index == 0) {
       await player.seek(Duration.zero);
       return;
     }

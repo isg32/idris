@@ -86,6 +86,17 @@ class SettingsPage extends ConsumerWidget {
                 onChanged: (v) => set('repeatEnd', v.name),
               ),
             ),
+            VListRow(
+              title: 'Volume keys skip',
+              subtitle:
+                  'While music plays, even with the screen off: double-tap '
+                  'or hold up for the next track, down for the previous. A '
+                  'single tap still changes the volume.',
+              trailing: VSwitch(
+                value: s.volumeSkip,
+                onChanged: (v) => set('volumeSkip', '$v'),
+              ),
+            ),
           ],
         ),
 

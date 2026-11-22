@@ -6,7 +6,7 @@
 
 **Your mantras and calm music, from your own YouTube playlists — and nothing else.**
 
-![Version](https://img.shields.io/badge/version-1.5.0-000000?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.6.0-000000?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/isg32/idris?style=flat-square&color=000000&label=release)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-000000?style=flat-square&logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android-000000?style=flat-square&logo=android&logoColor=white)
@@ -48,6 +48,7 @@ Idris is a personal, sideloaded app, not distributed through the Play Store.
 | **Home** | Recently added, recently played and your playlists. |
 | **Player** | Full screen, growing out of the mini player and shrinking back into it with a swipe down. Loop (off, playlist, one track), repeat a track ×N (3 to 1008, then stop or next), sleep timer (15 to 60 min, custom or end of track, fading out), shuffle and a reorderable queue. |
 | **Mini player** | Docked above the tab bar and on playlist pages, as in Spotify and Apple Music. |
+| **Volume keys** | While music plays, even with the screen off or another app in front: double-tap or hold Volume up for the next track, Volume down for the previous; a single tap still changes the volume. Off in Settings › Playback. |
 | **Media controls** | Background playback with the notification, lock screen, quick-settings player and headset buttons. |
 | **Quality** | Best (default), High (~160 kbps), Medium (~128 kbps) or Low. |
 | **Cache** | Every played track is kept. *Pin offline* (a playlist or a track) downloads ahead, on Wi-Fi by default, and is never removed. Unpinned audio past the limit (1, 2, 5 or 10 GB, or none) goes least recently played first. To free space yourself: *Remove from cache* on a track, *Remove downloads* on a playlist (which also stops keeping it offline), or *Clear auto cache* in Settings. |
@@ -134,6 +135,7 @@ Checked by tests on every run:
 | `lib/platform/cache_manager.dart` | cache index, artwork, pre-cache worker, eviction |
 | `lib/platform/audio_handler.dart` | media service, queue, loop, repeat, sleep, recovery |
 | `lib/platform/playback_rules.dart` | what follows a finished track; shuffle |
+| `lib/platform/volume_keys.dart` | tells a volume-key tap from a hold |
 | `lib/platform/crash_log.dart` | rolling log, error hooks, crash reports |
 | `lib/platform/covers.dart` | covers the user chose, copied into the app |
 | `lib/platform/local_music.dart` | "On this phone": chosen folders, scanning, `local:` tracks (with `LocalMusic.kt`) |

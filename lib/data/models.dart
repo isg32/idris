@@ -71,6 +71,7 @@ class Settings {
     this.repeatEnd = RepeatEnd.next,
     this.syncOnOpen = true,
     this.artwork = true,
+    this.volumeSkip = true,
   });
 
   static const int defaultCacheLimitGb = 5;
@@ -91,6 +92,10 @@ class Settings {
   /// player). Experimental: brings colour into a black-and-white app.
   final bool artwork;
 
+  /// While music plays, holding a volume key skips (up: next, down:
+  /// previous); a tap still changes the volume.
+  final bool volumeSkip;
+
   int? get cacheLimitBytes =>
       cacheLimitGb == 0 ? null : cacheLimitGb * 1024 * 1024 * 1024;
 
@@ -102,6 +107,7 @@ class Settings {
     repeatEnd: p['repeatEnd'] == 'stop' ? RepeatEnd.stop : RepeatEnd.next,
     syncOnOpen: p['syncOnOpen'] != 'false',
     artwork: p['artwork'] != 'false',
+    volumeSkip: p['volumeSkip'] != 'false',
   );
 }
 
