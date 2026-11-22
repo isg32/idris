@@ -13,6 +13,8 @@ import '../core/widgets/v_glass.dart';
 import '../core/widgets/v_page.dart';
 import '../data/providers.dart';
 import '../features/player/mini_player.dart';
+import '../features/settings/update.dart';
+import '../platform/updater.dart';
 
 /// The three tabs with the floating glass tab bar over them.
 ///
@@ -149,8 +151,44 @@ class _AppShellState extends State<AppShell> {
                   shell.goBranch(i, initialLocation: i == shell.currentIndex),
             ),
           ),
+          // Checks for a newer Idris, and says what's new after an update.
+          const _UpdateListener(),
         ],
       ),
     );
   }
+}
+
+class _UpdateListener extends ConsumerStatefulWidget {
+  const _UpdateListener();
+
+  @override
+  ConsumerState<_UpdateListener> createState() => _UpdateListenerState();
+}
+
+class _UpdateListenerState extends ConsumerState<_UpdateListener> {
+  late final AppLifecycleListener _life = AppLifecycleListener(
+    onResume: () => ref.read(updaterProvider.notifier).resumed(),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _life; // listening from now
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final whatsNew = await ref.read(updaterProvider.notifier).start();
+      if (whatsNew != null && mounted) {
+        await showWhatsNew(context, whatsNew);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _life.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

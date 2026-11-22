@@ -15,6 +15,7 @@ import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../common.dart';
 import '../library/import_sheet.dart';
+import '../settings/update.dart';
 
 /// Home: what's playing, recently added, recently played, playlists.
 class HomePage extends ConsumerWidget {
@@ -42,6 +43,8 @@ class HomePage extends ConsumerWidget {
           : VCircleButton(icon: VIcon.sync, onTap: () => unawaited(refresh())),
       children: [
         const OfflineBanner(),
+        // "Idris 1.1.0 is out", until it's closed.
+        const UpdateCard(closable: true),
         if (empty) const _Empty(),
         if (lastSync != null && lastSync.added > 0)
           VFootnote('Synced · ${lastSync.added} new'),

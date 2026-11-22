@@ -31,6 +31,8 @@ enum VIcon {
   playNext('M4 6h12M4 12h12M4 18h7M17 15v6M14 18h6'),
   pin('M5 3h14v18l-7-5l-7 5z'),
   cached('M12 4v11M7 10l5 5l5-5M5 20h14'),
+  download('M12 4v11M7 10l5 5l5-5M5 20h14'),
+  warning('M12 3l10 18H2zM12 10v5M12 18h.01'),
   notCached('M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16'),
   sync('M20 11a8 8 0 0 0-14.6-4.5M4 4v3h3M4 13a8 8 0 0 0 14.6 4.5M20 20v-3h-3'),
   external(

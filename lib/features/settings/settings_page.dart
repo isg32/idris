@@ -25,7 +25,9 @@ import '../../data/providers.dart';
 import '../../platform/quality.dart';
 import '../../platform/youtube.dart';
 import '../common.dart';
+import '../../platform/updater.dart';
 import 'about_page.dart';
+import 'update.dart';
 
 /// Settings: quality, cache, Glyph, library, about.
 class SettingsPage extends ConsumerWidget {
@@ -220,6 +222,10 @@ class SettingsPage extends ConsumerWidget {
         ),
 
         const SectionHeading('About'),
+        if (showsUpdate(ref.watch(updaterProvider))) ...[
+          const UpdateCard(),
+          const SizedBox(height: 12),
+        ],
         VListSection(
           children: [
             VListRow(
@@ -233,9 +239,46 @@ class SettingsPage extends ConsumerWidget {
               subtitle: 'Version $kAppVersion · licences, developer',
               onTap: () => context.push(Routes.about),
             ),
+            if (ref.watch(updaterProvider) is! UpdateUnsupported)
+              const _CheckForUpdates(),
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Settings › Check for updates: looks now, and says so when there's
+/// nothing new.
+class _CheckForUpdates extends ConsumerWidget {
+  const _CheckForUpdates();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(updaterProvider);
+    final checking = s is UpdateChecking;
+    return VListRow(
+      title: 'Check for updates',
+      subtitle: switch (s) {
+        UpdateChecking() => 'Checking GitHub…',
+        UpdateUpToDate() => "You're on the latest",
+        UpdateFailed(release: null, :final message) => message,
+        _ when s.release != null => 'Idris ${s.release!.version} is out',
+        _ => 'Updates come from GitHub, right here',
+      },
+      trailing: checking ? const VSpinner(size: 20) : null,
+      chevron: false,
+      onTap: checking
+          ? null
+          : () async {
+              unawaited(HapticFeedback.selectionClick());
+              final up = ref.read(updaterProvider.notifier);
+              await up.check(manual: true);
+              if (!context.mounted) return;
+              if (ref.read(updaterProvider).release != null) {
+                await showUpdateSheet(context);
+              }
+            },
     );
   }
 }

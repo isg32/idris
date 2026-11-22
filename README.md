@@ -6,7 +6,7 @@
 
 **Your mantras and calm music, from your own YouTube playlists — and nothing else.**
 
-![Version](https://img.shields.io/badge/version-1.0.0-000000?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.2.0-000000?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/isg32/idris?style=flat-square&color=000000&label=release)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-000000?style=flat-square&logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android-000000?style=flat-square&logo=android&logoColor=white)
@@ -52,6 +52,7 @@ Idris is a personal, sideloaded app, not distributed through the Play Store.
 | **Cache** | Every played track is kept. *Pin offline* (a playlist or a track) downloads ahead, on Wi-Fi by default, and is never removed. Unpinned audio past the limit (1, 2, 5 or 10 GB, or none) goes least recently played first. |
 | **Artwork** | Experimental, on by default: YouTube thumbnails in the mini player and on Home, blurred behind the player. Saved with the audio, so they show offline. |
 | **Crash reports** | An unexpected error shows a calm popup with the log, *Copy log* and *Save to Downloads*. A crash on the Android side is shown on the next launch. |
+| **Updates** | Idris updates itself from GitHub Releases: it checks at launch and every 6 hours (or from *Settings › Check for updates*), shows a card on Home and in Settings, downloads with progress (resuming after a drop), checks the size, SHA-256 and signer, and installs through Android's PackageInstaller. After the first update, Android installs the next ones without its confirm screen. *What's new* shows once afterwards. |
 | **Glyph** | Optional, on Nothing phones: a slow breathing pulse on the strip while audio plays. |
 
 ---
@@ -77,6 +78,7 @@ flowchart TB
         cache["CacheManager: chunked download, pre-cache, eviction"]
         yt["YouTube: playlist reader, stream resolvers"]
         crash["CrashLog"]
+        updater["Updater: OTA from GitHub Releases"]
     end
     pages --> providers --> library
     mini --> providers --> handler
@@ -113,6 +115,7 @@ Checked by tests on every run:
 - **Caching:** range-chunked downloads, reading while downloading, far seeks, resuming, eviction order (pinned never evicted).
 - **Library sync:** added and removed videos, renames kept, pinned sets, export round-trip.
 - **Playlist reading** in YouTube's current and older formats.
+- **Updates:** finding, downloading, resuming, rejecting a damaged or differently signed APK, the install permission, the 6-hour check, *What's new* once; and the version in About matching `pubspec.yaml`.
 
 ---
 
@@ -131,8 +134,9 @@ Checked by tests on every run:
 | `lib/platform/audio_handler.dart` | media service, queue, loop, repeat, sleep, recovery |
 | `lib/platform/playback_rules.dart` | what follows a finished track; shuffle |
 | `lib/platform/crash_log.dart` | rolling log, error hooks, crash reports |
+| `lib/platform/updater.dart` | over-the-air updates: check, download, verify, install (with `updater_channel.dart`) |
 | `lib/features/` | Home, Library, Playlist, Player (panel, sheets, mini player), Settings, About, Onboarding |
-| `android/app/src/main/kotlin/` | `YouTubeChannel` (NewPipe), `CrashFiles` (native crashes, Downloads) |
+| `android/app/src/main/kotlin/` | `YouTubeChannel` (NewPipe), `CrashFiles` (native crashes, Downloads), `Updater` (PackageInstaller) |
 | `tool/live_playlist_test.dart` | a by-hand check against real YouTube playlists |
 
 ---
@@ -160,9 +164,27 @@ flutter run                        # with the phone connected over USB debugging
 Release APKs are signed with a key that never enters the repository.
 
 - **Locally:** copy `.env.example` to `.env`, which is gitignored. Put the keystore in it as base64 (`base64 -w0 release-key.jks`) along with its passwords, then run `./build_signed.sh`. The keystore is decoded to a temporary file for the build and deleted afterwards.
-- **On GitHub:** every push to `main` runs `.github/workflows/release.yml`. It builds, tests and signs the APKs and publishes them as a release. Set `IDRIS_KEYSTORE_BASE64`, `IDRIS_KEYSTORE_PASSWORD`, `IDRIS_KEY_PASSWORD` and, optionally, `IDRIS_KEY_ALIAS` as secrets in a `deployment` environment.
+- **On GitHub:** every push to `main` runs `.github/workflows/release.yml`. It builds, tests and signs the APKs and publishes them as a release, with an `update.json` that installed copies read to update themselves. Set `IDRIS_KEYSTORE_BASE64`, `IDRIS_KEYSTORE_PASSWORD`, `IDRIS_KEY_PASSWORD` and, optionally, `IDRIS_KEY_ALIAS` as secrets in a `deployment` environment.
 
 Without these settings, release builds fall back to the debug key.
+
+### Over-the-air updates
+
+**Bump the version on every push to `main`**, in `pubspec.yaml` (`version: 1.2.0+8`: name and build number) and `kAppVersion` in `lib/features/settings/about_page.dart`; `test/version_test.dart` checks they agree. `--split-per-abi` adds 1000 × the ABI to the build number (build 8 is `2008` on arm64-v8a), and CI **refuses to publish** a release whose arm64 versionCode isn't above the last one's, since no phone could install it.
+
+Each release carries `update.json` (at `releases/latest/download/update.json`): every APK's URL, size, SHA-256 and versionCode (read from the APK with `aapt2`), and the commit subjects since the last release as *What's new*.
+
+```
+check update.json ──► newer versionCode for this ABI? ──► card on Home and in Settings
+  ──► download (Range resume) ──► verify size, SHA-256, signer, versionCode
+  ──► "Install unknown apps" (asked once) ──► PackageInstaller session
+  ──► Idris is replaced ──► "Idris updated to X" notification, What's new on next launch
+```
+
+- Android closes the running app while it replaces it, so playback stops for the install; it's back with one tap on the notification.
+- An update must be signed with the same key as the installed app. A copy signed with another key (a debug build) is told to reinstall once from GitHub.
+- Copies older than 1.2.0 have no updater: install 1.2.0 by hand once, and later versions come by themselves.
+- To test against a local server: `flutter build apk --release --split-per-abi --target-platform android-arm64 --dart-define=IDRIS_UPDATE_URL=http://127.0.0.1:8765/update.json` and `adb reverse tcp:8765 tcp:8765`. The server must support Range requests.
 
 ### Glyph (optional)
 

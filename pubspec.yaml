@@ -1,7 +1,7 @@
 name: idris
 description: "Audio from your own YouTube playlists — mantras, chants and calm music — cached as you listen."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.2.0+8
 
 environment:
   sdk: ^3.13.7
@@ -25,6 +25,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   nothing_glyph_interface: ^0.0.10
   file_picker: ^13.3.2
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:

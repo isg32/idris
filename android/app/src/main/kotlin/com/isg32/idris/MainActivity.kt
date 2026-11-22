@@ -20,5 +20,7 @@ class MainActivity : AudioServiceActivity() {
         val messenger = flutterEngine.dartExecutor.binaryMessenger
         YouTubeChannel.register(messenger)
         CrashFiles.register(this, messenger)
+        // Over-the-air updates from GitHub Releases (lib/platform/updater.dart).
+        Updater.register(this, messenger)
     }
 }

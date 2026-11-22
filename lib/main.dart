@@ -13,6 +13,7 @@ import 'data/providers.dart';
 import 'platform/audio_handler.dart';
 import 'platform/cache_manager.dart';
 import 'platform/crash_log.dart';
+import 'platform/updater.dart';
 import 'features/crash_overlay.dart';
 import 'features/settings/about_page.dart';
 
@@ -42,6 +43,8 @@ Future<void> main() async {
         libraryProvider.overrideWithValue(library),
         cacheManagerProvider.overrideWithValue(cache),
         audioHandlerProvider.overrideWithValue(handler),
+        // Over-the-air updates from GitHub Releases (Android only).
+        updateDepsProvider.overrideWithValue(phoneUpdateDeps()),
       ],
       child: IdrisApp(router: buildRouter(onboarded: onboarded)),
     ),

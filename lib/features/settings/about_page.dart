@@ -7,7 +7,7 @@ import '../../core/widgets/v_page.dart';
 import '../../platform/crash_log.dart';
 
 /// The version shown in About (keep in step with pubspec.yaml).
-const String kAppVersion = '1.0.0';
+const String kAppVersion = '1.2.0';
 
 /// Settings → Idris: the app's mark, what it is, the licences and who made
 /// it (as Veronica's About).
