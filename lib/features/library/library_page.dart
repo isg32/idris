@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_text.dart';
@@ -12,7 +13,9 @@ import '../../core/widgets/v_list.dart';
 import '../../core/widgets/v_page.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../../app/router.dart';
 import '../common.dart';
+import '../local/local_page.dart';
 import 'import_sheet.dart';
 
 /// Library: every playlist, or every track that plays offline.
@@ -66,6 +69,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       children: _offline
           ? const [_OfflineTracks()]
           : [
+              LocalCard(onTap: () => context.push(Routes.local)),
               if (playlists.isEmpty)
                 const VFootnote(
                   'No playlists yet. Tap + and paste a YouTube playlist link.',

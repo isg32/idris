@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core/theme/v_tokens.dart';
 import '../features/home/home_page.dart';
 import '../features/library/library_page.dart';
+import '../features/local/local_page.dart';
 import '../features/onboarding/onboarding_page.dart';
 import '../features/player/player_page.dart';
 import '../features/player/player_sheet.dart';
@@ -20,6 +21,7 @@ abstract final class Routes {
   static const welcome = '/welcome';
   static const player = '/player';
   static const about = '/about';
+  static const local = '/local';
   static String playlist(int id) => '/playlist/$id';
 }
 
@@ -89,6 +91,12 @@ GoRouter buildRouter({required bool onboarded}) => GoRouter(
           child: const PlayerPage(),
         ),
       ),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: Routes.local,
+      pageBuilder: (context, state) =>
+          CupertinoPage<void>(key: state.pageKey, child: const LocalPage()),
     ),
     GoRoute(
       parentNavigatorKey: _rootKey,

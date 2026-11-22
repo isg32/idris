@@ -1,5 +1,6 @@
 package com.isg32.idris
 
+import android.content.Intent
 import android.os.Bundle
 import com.isg32.idris.youtube.YouTubeChannel
 import com.ryanheise.audioservice.AudioServiceActivity
@@ -22,5 +23,14 @@ class MainActivity : AudioServiceActivity() {
         CrashFiles.register(this, messenger)
         // Over-the-air updates from GitHub Releases (lib/platform/updater.dart).
         Updater.register(this, messenger)
+        // Music from folders on the phone (lib/platform/local_music.dart).
+        LocalMusic.register(this, messenger)
+    }
+
+    @Deprecated("Flutter's FlutterActivity still routes results through this")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (LocalMusic.onActivityResult(this, requestCode, resultCode, data)) return
+        @Suppress("DEPRECATION")
+        super.onActivityResult(requestCode, resultCode, data)
     }
 }

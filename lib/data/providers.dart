@@ -10,6 +10,7 @@ import '../platform/audio_handler.dart';
 import '../platform/cache_manager.dart';
 import '../platform/covers.dart';
 import '../platform/glyph.dart';
+import '../platform/local_music.dart';
 import '../platform/youtube.dart';
 import 'library.dart';
 import 'models.dart';
@@ -96,12 +97,13 @@ final precacheWaitingProvider = Provider<String?>((ref) {
 });
 
 /// The state a track row shows.
-enum TrackCacheState { streams, caching, cached, pinned }
+enum TrackCacheState { streams, caching, cached, pinned, local }
 
 final trackCacheStateProvider = Provider.family<TrackCacheState, String>((
   ref,
   videoId,
 ) {
+  if (isLocal(videoId)) return TrackCacheState.local;
   final entry = ref.watch(cacheEntriesProvider).value?[videoId];
   final pinned = ref.watch(pinnedIdsProvider).value?.contains(videoId) ?? false;
   final caching = ref.watch(cacheProgressProvider).containsKey(videoId);
@@ -111,6 +113,24 @@ final trackCacheStateProvider = Provider.family<TrackCacheState, String>((
   if (caching) return TrackCacheState.caching;
   return TrackCacheState.streams;
 });
+
+/// "On this phone": music from folders the user chose.
+final localMusicProvider = Provider<LocalMusic>(
+  (ref) => throw UnimplementedError('overridden in main()'),
+);
+
+final localFoldersProvider = StreamProvider<List<LocalFolder>>(
+  (ref) => ref.watch(localMusicProvider).watchFolders(),
+);
+
+final localTracksProvider = StreamProvider<List<Track>>(
+  (ref) => ref.watch(localMusicProvider).watchTracks(),
+);
+
+/// Songs per chosen folder, by folder URI.
+final localCountsProvider = StreamProvider<Map<String, int>>(
+  (ref) => ref.watch(localMusicProvider).watchCounts(),
+);
 
 /// Where the covers the user chose are kept.
 final coversProvider = Provider<Covers>((ref) => Covers());
@@ -190,6 +210,12 @@ final syncProvider = Provider<Future<SyncResult> Function()>((ref) {
       } on Object catch (e) {
         debugPrint('Sync of ${p.title} skipped: $e');
       }
+    }
+    try {
+      // New and changed files in the folders on the phone.
+      await ref.read(localMusicProvider).scanAll();
+    } on Object catch (e) {
+      debugPrint('Rescan of folders on the phone skipped: $e');
     }
     ref.read(cacheManagerProvider).kick();
     return total;

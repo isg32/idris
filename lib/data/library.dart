@@ -76,7 +76,7 @@ class Library {
         // The title isn't touched: it may have been renamed in Idris.
         PlaylistsCompanion(channel: Value(yt.channel), lastSyncedAt: Value(at)),
       );
-      await _dropOrphans();
+      await dropOrphans();
       return SyncResult(added: diff.added.length, removed: diff.removed.length);
     });
   }
@@ -119,10 +119,11 @@ class Library {
     });
   }
 
-  /// Tracks no playlist holds any more.
-  Future<void> _dropOrphans() => db.customStatement(
+  /// Tracks no playlist holds any more, and no folder on the phone.
+  Future<void> dropOrphans() => db.customStatement(
     'DELETE FROM tracks WHERE video_id NOT IN '
-    '(SELECT video_id FROM playlist_tracks)',
+    '(SELECT video_id FROM playlist_tracks) AND video_id NOT IN '
+    '(SELECT video_id FROM local_files)',
   );
 
   Future<void> renamePlaylist(int id, String title) =>
@@ -135,7 +136,7 @@ class Library {
       db.playlistTracks,
     )..where((t) => t.playlistId.equals(id))).go();
     await (db.delete(db.playlists)..where((p) => p.id.equals(id))).go();
-    await _dropOrphans();
+    await dropOrphans();
   });
 
   Future<void> setPlaylistPinned(int id, bool pinned) =>

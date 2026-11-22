@@ -1,7 +1,7 @@
 import '../platform/quality.dart';
 import 'db/database.dart';
 
-export 'db/database.dart' show Track, CacheEntry, Playlist;
+export 'db/database.dart' show Track, CacheEntry, Playlist, LocalFolder;
 
 /// A playlist with the numbers its card shows.
 class PlaylistSummary {

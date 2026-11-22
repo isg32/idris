@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import '../data/db/database.dart';
 import '../data/library.dart';
 import 'cache_download.dart';
+import 'local_music.dart';
 import 'net.dart';
 import 'quality.dart';
 import 'youtube.dart';
@@ -44,12 +45,16 @@ class CacheManager {
     Stream<List<ConnectivityResult>>? connectivity,
     Future<List<ConnectivityResult>> Function()? checkConnectivity,
     this.resolve = resolveAudio,
+    this.local,
   }) : _dirOverride = dir,
        _connectivity = connectivity ?? Connectivity().onConnectivityChanged,
        _checkConnectivity =
            checkConnectivity ?? Connectivity().checkConnectivity;
 
   final Library library;
+
+  /// Music from folders on the phone: played from the file, never cached.
+  final LocalMusic? local;
   final Future<(ResolvedAudio, int)> Function(
     String videoId,
     AudioQuality quality, {
@@ -149,6 +154,15 @@ class CacheManager {
       kick(); // a pinned track left half-done goes back to the worker
     }
     _streamingId = videoId;
+    if (isLocal(videoId)) {
+      final uri = await local?.uriOf(videoId);
+      if (uri == null) throw StateError('$videoId is no longer on the phone');
+      return OpenedAudio(
+        source: AudioSource.uri(Uri.parse(uri)),
+        cached: true,
+        kbps: 0,
+      );
+    }
     final entry = await library.cacheEntry(videoId);
     if (entry != null && entry.complete && from == 0) {
       final f = File(entry.path);
@@ -292,7 +306,23 @@ class CacheManager {
 
   /// The video's thumbnail as a file beside its audio, fetched once, so
   /// artwork shows offline too. Null when it can't be had.
-  Future<File?> artwork(String videoId) => _art[videoId] ??= _fetchArt(videoId);
+  Future<File?> artwork(String videoId) => _art[videoId] ??= isLocal(videoId)
+      ? _localArt(videoId)
+      : _fetchArt(videoId);
+
+  /// A local file's embedded picture, copied out once.
+  Future<File?> _localArt(String videoId) async {
+    final f = File(p.join((await dir).path, '${videoId.substring(6)}.jpg'));
+    if (f.existsSync() && f.lengthSync() > 0) return f;
+    final music = local;
+    final uri = await music?.uriOf(videoId);
+    if (music == null || uri == null) return null;
+    try {
+      return await music.platform.art(uri, f.path) ? f : null;
+    } on Object {
+      return null;
+    }
+  }
 
   Future<File?> _fetchArt(String videoId) async {
     final f = File(p.join((await dir).path, '$videoId.jpg'));

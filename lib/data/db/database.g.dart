@@ -2272,6 +2272,632 @@ class PrefsCompanion extends UpdateCompanion<Pref> {
   }
 }
 
+class $LocalFoldersTable extends LocalFolders
+    with TableInfo<$LocalFoldersTable, LocalFolder> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalFoldersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _uriMeta = const VerificationMeta('uri');
+  @override
+  late final GeneratedColumn<String> uri = GeneratedColumn<String>(
+    'uri',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _addedAtMeta = const VerificationMeta(
+    'addedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> addedAt = GeneratedColumn<DateTime>(
+    'added_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [uri, name, addedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_folders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalFolder> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('uri')) {
+      context.handle(
+        _uriMeta,
+        uri.isAcceptableOrUnknown(data['uri']!, _uriMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_uriMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('added_at')) {
+      context.handle(
+        _addedAtMeta,
+        addedAt.isAcceptableOrUnknown(data['added_at']!, _addedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_addedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {uri};
+  @override
+  LocalFolder map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalFolder(
+      uri: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uri'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      addedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}added_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalFoldersTable createAlias(String alias) {
+    return $LocalFoldersTable(attachedDatabase, alias);
+  }
+}
+
+class LocalFolder extends DataClass implements Insertable<LocalFolder> {
+  final String uri;
+  final String name;
+  final DateTime addedAt;
+  const LocalFolder({
+    required this.uri,
+    required this.name,
+    required this.addedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['uri'] = Variable<String>(uri);
+    map['name'] = Variable<String>(name);
+    map['added_at'] = Variable<DateTime>(addedAt);
+    return map;
+  }
+
+  LocalFoldersCompanion toCompanion(bool nullToAbsent) {
+    return LocalFoldersCompanion(
+      uri: Value(uri),
+      name: Value(name),
+      addedAt: Value(addedAt),
+    );
+  }
+
+  factory LocalFolder.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalFolder(
+      uri: serializer.fromJson<String>(json['uri']),
+      name: serializer.fromJson<String>(json['name']),
+      addedAt: serializer.fromJson<DateTime>(json['addedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'uri': serializer.toJson<String>(uri),
+      'name': serializer.toJson<String>(name),
+      'addedAt': serializer.toJson<DateTime>(addedAt),
+    };
+  }
+
+  LocalFolder copyWith({String? uri, String? name, DateTime? addedAt}) =>
+      LocalFolder(
+        uri: uri ?? this.uri,
+        name: name ?? this.name,
+        addedAt: addedAt ?? this.addedAt,
+      );
+  LocalFolder copyWithCompanion(LocalFoldersCompanion data) {
+    return LocalFolder(
+      uri: data.uri.present ? data.uri.value : this.uri,
+      name: data.name.present ? data.name.value : this.name,
+      addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalFolder(')
+          ..write('uri: $uri, ')
+          ..write('name: $name, ')
+          ..write('addedAt: $addedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(uri, name, addedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalFolder &&
+          other.uri == this.uri &&
+          other.name == this.name &&
+          other.addedAt == this.addedAt);
+}
+
+class LocalFoldersCompanion extends UpdateCompanion<LocalFolder> {
+  final Value<String> uri;
+  final Value<String> name;
+  final Value<DateTime> addedAt;
+  final Value<int> rowid;
+  const LocalFoldersCompanion({
+    this.uri = const Value.absent(),
+    this.name = const Value.absent(),
+    this.addedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalFoldersCompanion.insert({
+    required String uri,
+    required String name,
+    required DateTime addedAt,
+    this.rowid = const Value.absent(),
+  }) : uri = Value(uri),
+       name = Value(name),
+       addedAt = Value(addedAt);
+  static Insertable<LocalFolder> custom({
+    Expression<String>? uri,
+    Expression<String>? name,
+    Expression<DateTime>? addedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (uri != null) 'uri': uri,
+      if (name != null) 'name': name,
+      if (addedAt != null) 'added_at': addedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalFoldersCompanion copyWith({
+    Value<String>? uri,
+    Value<String>? name,
+    Value<DateTime>? addedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalFoldersCompanion(
+      uri: uri ?? this.uri,
+      name: name ?? this.name,
+      addedAt: addedAt ?? this.addedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (uri.present) {
+      map['uri'] = Variable<String>(uri.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (addedAt.present) {
+      map['added_at'] = Variable<DateTime>(addedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalFoldersCompanion(')
+          ..write('uri: $uri, ')
+          ..write('name: $name, ')
+          ..write('addedAt: $addedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalFilesTable extends LocalFiles
+    with TableInfo<$LocalFilesTable, LocalFile> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalFilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _videoIdMeta = const VerificationMeta(
+    'videoId',
+  );
+  @override
+  late final GeneratedColumn<String> videoId = GeneratedColumn<String>(
+    'video_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _uriMeta = const VerificationMeta('uri');
+  @override
+  late final GeneratedColumn<String> uri = GeneratedColumn<String>(
+    'uri',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _folderUriMeta = const VerificationMeta(
+    'folderUri',
+  );
+  @override
+  late final GeneratedColumn<String> folderUri = GeneratedColumn<String>(
+    'folder_uri',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modifiedMsMeta = const VerificationMeta(
+    'modifiedMs',
+  );
+  @override
+  late final GeneratedColumn<int> modifiedMs = GeneratedColumn<int>(
+    'modified_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<int> bytes = GeneratedColumn<int>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    videoId,
+    uri,
+    folderUri,
+    modifiedMs,
+    bytes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_files';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalFile> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('video_id')) {
+      context.handle(
+        _videoIdMeta,
+        videoId.isAcceptableOrUnknown(data['video_id']!, _videoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_videoIdMeta);
+    }
+    if (data.containsKey('uri')) {
+      context.handle(
+        _uriMeta,
+        uri.isAcceptableOrUnknown(data['uri']!, _uriMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_uriMeta);
+    }
+    if (data.containsKey('folder_uri')) {
+      context.handle(
+        _folderUriMeta,
+        folderUri.isAcceptableOrUnknown(data['folder_uri']!, _folderUriMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_folderUriMeta);
+    }
+    if (data.containsKey('modified_ms')) {
+      context.handle(
+        _modifiedMsMeta,
+        modifiedMs.isAcceptableOrUnknown(data['modified_ms']!, _modifiedMsMeta),
+      );
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {videoId};
+  @override
+  LocalFile map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalFile(
+      videoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_id'],
+      )!,
+      uri: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uri'],
+      )!,
+      folderUri: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}folder_uri'],
+      )!,
+      modifiedMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}modified_ms'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bytes'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalFilesTable createAlias(String alias) {
+    return $LocalFilesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalFile extends DataClass implements Insertable<LocalFile> {
+  final String videoId;
+  final String uri;
+  final String folderUri;
+
+  /// When the file last changed, so a rescan reads only what's new.
+  final int modifiedMs;
+  final int bytes;
+  const LocalFile({
+    required this.videoId,
+    required this.uri,
+    required this.folderUri,
+    required this.modifiedMs,
+    required this.bytes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['video_id'] = Variable<String>(videoId);
+    map['uri'] = Variable<String>(uri);
+    map['folder_uri'] = Variable<String>(folderUri);
+    map['modified_ms'] = Variable<int>(modifiedMs);
+    map['bytes'] = Variable<int>(bytes);
+    return map;
+  }
+
+  LocalFilesCompanion toCompanion(bool nullToAbsent) {
+    return LocalFilesCompanion(
+      videoId: Value(videoId),
+      uri: Value(uri),
+      folderUri: Value(folderUri),
+      modifiedMs: Value(modifiedMs),
+      bytes: Value(bytes),
+    );
+  }
+
+  factory LocalFile.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalFile(
+      videoId: serializer.fromJson<String>(json['videoId']),
+      uri: serializer.fromJson<String>(json['uri']),
+      folderUri: serializer.fromJson<String>(json['folderUri']),
+      modifiedMs: serializer.fromJson<int>(json['modifiedMs']),
+      bytes: serializer.fromJson<int>(json['bytes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'videoId': serializer.toJson<String>(videoId),
+      'uri': serializer.toJson<String>(uri),
+      'folderUri': serializer.toJson<String>(folderUri),
+      'modifiedMs': serializer.toJson<int>(modifiedMs),
+      'bytes': serializer.toJson<int>(bytes),
+    };
+  }
+
+  LocalFile copyWith({
+    String? videoId,
+    String? uri,
+    String? folderUri,
+    int? modifiedMs,
+    int? bytes,
+  }) => LocalFile(
+    videoId: videoId ?? this.videoId,
+    uri: uri ?? this.uri,
+    folderUri: folderUri ?? this.folderUri,
+    modifiedMs: modifiedMs ?? this.modifiedMs,
+    bytes: bytes ?? this.bytes,
+  );
+  LocalFile copyWithCompanion(LocalFilesCompanion data) {
+    return LocalFile(
+      videoId: data.videoId.present ? data.videoId.value : this.videoId,
+      uri: data.uri.present ? data.uri.value : this.uri,
+      folderUri: data.folderUri.present ? data.folderUri.value : this.folderUri,
+      modifiedMs: data.modifiedMs.present
+          ? data.modifiedMs.value
+          : this.modifiedMs,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalFile(')
+          ..write('videoId: $videoId, ')
+          ..write('uri: $uri, ')
+          ..write('folderUri: $folderUri, ')
+          ..write('modifiedMs: $modifiedMs, ')
+          ..write('bytes: $bytes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(videoId, uri, folderUri, modifiedMs, bytes);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalFile &&
+          other.videoId == this.videoId &&
+          other.uri == this.uri &&
+          other.folderUri == this.folderUri &&
+          other.modifiedMs == this.modifiedMs &&
+          other.bytes == this.bytes);
+}
+
+class LocalFilesCompanion extends UpdateCompanion<LocalFile> {
+  final Value<String> videoId;
+  final Value<String> uri;
+  final Value<String> folderUri;
+  final Value<int> modifiedMs;
+  final Value<int> bytes;
+  final Value<int> rowid;
+  const LocalFilesCompanion({
+    this.videoId = const Value.absent(),
+    this.uri = const Value.absent(),
+    this.folderUri = const Value.absent(),
+    this.modifiedMs = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalFilesCompanion.insert({
+    required String videoId,
+    required String uri,
+    required String folderUri,
+    this.modifiedMs = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : videoId = Value(videoId),
+       uri = Value(uri),
+       folderUri = Value(folderUri);
+  static Insertable<LocalFile> custom({
+    Expression<String>? videoId,
+    Expression<String>? uri,
+    Expression<String>? folderUri,
+    Expression<int>? modifiedMs,
+    Expression<int>? bytes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (videoId != null) 'video_id': videoId,
+      if (uri != null) 'uri': uri,
+      if (folderUri != null) 'folder_uri': folderUri,
+      if (modifiedMs != null) 'modified_ms': modifiedMs,
+      if (bytes != null) 'bytes': bytes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalFilesCompanion copyWith({
+    Value<String>? videoId,
+    Value<String>? uri,
+    Value<String>? folderUri,
+    Value<int>? modifiedMs,
+    Value<int>? bytes,
+    Value<int>? rowid,
+  }) {
+    return LocalFilesCompanion(
+      videoId: videoId ?? this.videoId,
+      uri: uri ?? this.uri,
+      folderUri: folderUri ?? this.folderUri,
+      modifiedMs: modifiedMs ?? this.modifiedMs,
+      bytes: bytes ?? this.bytes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (videoId.present) {
+      map['video_id'] = Variable<String>(videoId.value);
+    }
+    if (uri.present) {
+      map['uri'] = Variable<String>(uri.value);
+    }
+    if (folderUri.present) {
+      map['folder_uri'] = Variable<String>(folderUri.value);
+    }
+    if (modifiedMs.present) {
+      map['modified_ms'] = Variable<int>(modifiedMs.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<int>(bytes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalFilesCompanion(')
+          ..write('videoId: $videoId, ')
+          ..write('uri: $uri, ')
+          ..write('folderUri: $folderUri, ')
+          ..write('modifiedMs: $modifiedMs, ')
+          ..write('bytes: $bytes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2281,6 +2907,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CacheEntriesTable cacheEntries = $CacheEntriesTable(this);
   late final $PlaysTable plays = $PlaysTable(this);
   late final $PrefsTable prefs = $PrefsTable(this);
+  late final $LocalFoldersTable localFolders = $LocalFoldersTable(this);
+  late final $LocalFilesTable localFiles = $LocalFilesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2292,6 +2920,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cacheEntries,
     plays,
     prefs,
+    localFolders,
+    localFiles,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3945,6 +4575,383 @@ typedef $$PrefsTableProcessedTableManager =
       Pref,
       PrefetchHooks Function()
     >;
+typedef $$LocalFoldersTableCreateCompanionBuilder =
+    LocalFoldersCompanion Function({
+      required String uri,
+      required String name,
+      required DateTime addedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalFoldersTableUpdateCompanionBuilder =
+    LocalFoldersCompanion Function({
+      Value<String> uri,
+      Value<String> name,
+      Value<DateTime> addedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalFoldersTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalFoldersTable> {
+  $$LocalFoldersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get uri => $composableBuilder(
+    column: $table.uri,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalFoldersTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalFoldersTable> {
+  $$LocalFoldersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get uri => $composableBuilder(
+    column: $table.uri,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalFoldersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalFoldersTable> {
+  $$LocalFoldersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get uri =>
+      $composableBuilder(column: $table.uri, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => column);
+}
+
+class $$LocalFoldersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalFoldersTable,
+          LocalFolder,
+          $$LocalFoldersTableFilterComposer,
+          $$LocalFoldersTableOrderingComposer,
+          $$LocalFoldersTableAnnotationComposer,
+          $$LocalFoldersTableCreateCompanionBuilder,
+          $$LocalFoldersTableUpdateCompanionBuilder,
+          (
+            LocalFolder,
+            BaseReferences<_$AppDatabase, $LocalFoldersTable, LocalFolder>,
+          ),
+          LocalFolder,
+          PrefetchHooks Function()
+        > {
+  $$LocalFoldersTableTableManager(_$AppDatabase db, $LocalFoldersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalFoldersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalFoldersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalFoldersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> uri = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<DateTime> addedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalFoldersCompanion(
+                uri: uri,
+                name: name,
+                addedAt: addedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String uri,
+                required String name,
+                required DateTime addedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LocalFoldersCompanion.insert(
+                uri: uri,
+                name: name,
+                addedAt: addedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LocalFoldersTable, LocalFolder>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalFoldersTable,
+                    LocalFolder
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalFoldersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalFoldersTable,
+      LocalFolder,
+      $$LocalFoldersTableFilterComposer,
+      $$LocalFoldersTableOrderingComposer,
+      $$LocalFoldersTableAnnotationComposer,
+      $$LocalFoldersTableCreateCompanionBuilder,
+      $$LocalFoldersTableUpdateCompanionBuilder,
+      (
+        LocalFolder,
+        BaseReferences<_$AppDatabase, $LocalFoldersTable, LocalFolder>,
+      ),
+      LocalFolder,
+      PrefetchHooks Function()
+    >;
+typedef $$LocalFilesTableCreateCompanionBuilder = LocalFilesCompanion Function({
+  required String videoId,
+  required String uri,
+  required String folderUri,
+  Value<int> modifiedMs,
+  Value<int> bytes,
+  Value<int> rowid,
+});
+typedef $$LocalFilesTableUpdateCompanionBuilder = LocalFilesCompanion Function({
+  Value<String> videoId,
+  Value<String> uri,
+  Value<String> folderUri,
+  Value<int> modifiedMs,
+  Value<int> bytes,
+  Value<int> rowid,
+});
+
+class $$LocalFilesTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalFilesTable> {
+  $$LocalFilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get videoId => $composableBuilder(
+    column: $table.videoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get uri => $composableBuilder(
+    column: $table.uri,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get folderUri => $composableBuilder(
+    column: $table.folderUri,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get modifiedMs => $composableBuilder(
+    column: $table.modifiedMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalFilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalFilesTable> {
+  $$LocalFilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get videoId => $composableBuilder(
+    column: $table.videoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get uri => $composableBuilder(
+    column: $table.uri,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get folderUri => $composableBuilder(
+    column: $table.folderUri,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get modifiedMs => $composableBuilder(
+    column: $table.modifiedMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalFilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalFilesTable> {
+  $$LocalFilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get videoId =>
+      $composableBuilder(column: $table.videoId, builder: (column) => column);
+
+  GeneratedColumn<String> get uri =>
+      $composableBuilder(column: $table.uri, builder: (column) => column);
+
+  GeneratedColumn<String> get folderUri =>
+      $composableBuilder(column: $table.folderUri, builder: (column) => column);
+
+  GeneratedColumn<int> get modifiedMs => $composableBuilder(
+    column: $table.modifiedMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+}
+
+class $$LocalFilesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalFilesTable,
+          LocalFile,
+          $$LocalFilesTableFilterComposer,
+          $$LocalFilesTableOrderingComposer,
+          $$LocalFilesTableAnnotationComposer,
+          $$LocalFilesTableCreateCompanionBuilder,
+          $$LocalFilesTableUpdateCompanionBuilder,
+          (
+            LocalFile,
+            BaseReferences<_$AppDatabase, $LocalFilesTable, LocalFile>,
+          ),
+          LocalFile,
+          PrefetchHooks Function()
+        > {
+  $$LocalFilesTableTableManager(_$AppDatabase db, $LocalFilesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalFilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalFilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalFilesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> videoId = const Value.absent(),
+                Value<String> uri = const Value.absent(),
+                Value<String> folderUri = const Value.absent(),
+                Value<int> modifiedMs = const Value.absent(),
+                Value<int> bytes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalFilesCompanion(
+                videoId: videoId,
+                uri: uri,
+                folderUri: folderUri,
+                modifiedMs: modifiedMs,
+                bytes: bytes,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String videoId,
+                required String uri,
+                required String folderUri,
+                Value<int> modifiedMs = const Value.absent(),
+                Value<int> bytes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalFilesCompanion.insert(
+                videoId: videoId,
+                uri: uri,
+                folderUri: folderUri,
+                modifiedMs: modifiedMs,
+                bytes: bytes,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LocalFilesTable, LocalFile>(table),
+                  BaseReferences<_$AppDatabase, $LocalFilesTable, LocalFile>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalFilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalFilesTable,
+      LocalFile,
+      $$LocalFilesTableFilterComposer,
+      $$LocalFilesTableOrderingComposer,
+      $$LocalFilesTableAnnotationComposer,
+      $$LocalFilesTableCreateCompanionBuilder,
+      $$LocalFilesTableUpdateCompanionBuilder,
+      (LocalFile, BaseReferences<_$AppDatabase, $LocalFilesTable, LocalFile>),
+      LocalFile,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3961,4 +4968,8 @@ class $AppDatabaseManager {
       $$PlaysTableTableManager(_db, _db.plays);
   $$PrefsTableTableManager get prefs =>
       $$PrefsTableTableManager(_db, _db.prefs);
+  $$LocalFoldersTableTableManager get localFolders =>
+      $$LocalFoldersTableTableManager(_db, _db.localFolders);
+  $$LocalFilesTableTableManager get localFiles =>
+      $$LocalFilesTableTableManager(_db, _db.localFiles);
 }

@@ -14,6 +14,7 @@ import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../common.dart';
+import '../../platform/local_music.dart';
 import '../library/import_sheet.dart';
 import '../settings/update.dart';
 
@@ -66,7 +67,10 @@ class HomePage extends ConsumerWidget {
                 TrackRow(
                   track: p.track,
                   subtitle: [
-                    if (p.playlistTitle.isNotEmpty) p.playlistTitle,
+                    if (isLocal(p.track.videoId))
+                      'On this phone'
+                    else if (p.playlistTitle.isNotEmpty)
+                      p.playlistTitle,
                     'played ${when(p.at)}',
                   ].join(' · '),
                   onTap: () => _playFromPlaylist(context, ref, p),
@@ -95,7 +99,10 @@ Future<void> _playFromPlaylist(
   WidgetRef ref,
   TrackInPlaylist item,
 ) async {
-  final tracks = item.playlistId == 0
+  final local = isLocal(item.track.videoId);
+  final tracks = local
+      ? await ref.read(localMusicProvider).tracks()
+      : item.playlistId == 0
       ? [item.track]
       : await ref.read(libraryProvider).playlistTracks(item.playlistId);
   final i = tracks.indexWhere((t) => t.videoId == item.track.videoId);
@@ -105,7 +112,7 @@ Future<void> _playFromPlaylist(
     ref,
     i < 0 ? [item.track] : tracks,
     index: i < 0 ? 0 : i,
-    source: item.playlistTitle,
+    source: local ? 'On this phone' : item.playlistTitle,
   );
 }
 

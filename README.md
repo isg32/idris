@@ -6,7 +6,7 @@
 
 **Your mantras and calm music, from your own YouTube playlists — and nothing else.**
 
-![Version](https://img.shields.io/badge/version-1.4.0-000000?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.5.0-000000?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/isg32/idris?style=flat-square&color=000000&label=release)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-000000?style=flat-square&logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android-000000?style=flat-square&logo=android&logoColor=white)
@@ -44,6 +44,7 @@ Idris is a personal, sideloaded app, not distributed through the Play Store.
 | Area | What it does |
 | --- | --- |
 | **Playlists** | Paste a public or unlisted playlist link (no sign-in). Re-synced when the app opens and on pull to refresh: new videos show under *Recently added*, removed ones drop out. A rename in Idris survives syncs. |
+| **On this phone** | Music from folders you choose on the phone, in one list at the top of Library: titles, artists and covers read from the files, played straight from them (never cached, no network). Pull down to pick up new files; removing a folder only takes it out of Idris. Uses Android's folder picker, so no storage permission. |
 | **Home** | Recently added, recently played and your playlists. |
 | **Player** | Full screen, growing out of the mini player and shrinking back into it with a swipe down. Loop (off, playlist, one track), repeat a track ×N (3 to 1008, then stop or next), sleep timer (15 to 60 min, custom or end of track, fading out), shuffle and a reorderable queue. |
 | **Mini player** | Docked above the tab bar and on playlist pages, as in Spotify and Apple Music. |
@@ -135,9 +136,10 @@ Checked by tests on every run:
 | `lib/platform/playback_rules.dart` | what follows a finished track; shuffle |
 | `lib/platform/crash_log.dart` | rolling log, error hooks, crash reports |
 | `lib/platform/covers.dart` | covers the user chose, copied into the app |
+| `lib/platform/local_music.dart` | "On this phone": chosen folders, scanning, `local:` tracks (with `LocalMusic.kt`) |
 | `lib/platform/updater.dart` | over-the-air updates: check, download, verify, install (with `updater_channel.dart`) |
 | `lib/features/` | Home, Library, Playlist, Player (panel, sheets, mini player), Settings, About, Onboarding |
-| `android/app/src/main/kotlin/` | `YouTubeChannel` (NewPipe), `CrashFiles` (native crashes, Downloads), `Updater` (PackageInstaller) |
+| `android/app/src/main/kotlin/` | `YouTubeChannel` (NewPipe), `CrashFiles` (native crashes, Downloads), `Updater` (PackageInstaller), `LocalMusic` (folder picker, tags, embedded art) |
 | `tool/live_playlist_test.dart` | a by-hand check against real YouTube playlists |
 
 ---

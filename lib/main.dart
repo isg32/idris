@@ -13,6 +13,7 @@ import 'data/providers.dart';
 import 'platform/audio_handler.dart';
 import 'platform/cache_manager.dart';
 import 'platform/covers.dart';
+import 'platform/local_music.dart';
 import 'platform/crash_log.dart';
 import 'platform/updater.dart';
 import 'features/crash_overlay.dart';
@@ -29,7 +30,8 @@ Future<void> main() async {
   unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
 
   final library = Library(AppDatabase());
-  final cache = CacheManager(library);
+  final local = LocalMusic(library, ChannelLocalMusic());
+  final cache = CacheManager(library, local: local);
   final covers = Covers();
   // Covers of playlists and tracks that are gone.
   unawaited(library.coverPaths().then(covers.tidy).catchError((Object _) {}));
@@ -47,6 +49,7 @@ Future<void> main() async {
         libraryProvider.overrideWithValue(library),
         cacheManagerProvider.overrideWithValue(cache),
         coversProvider.overrideWithValue(covers),
+        localMusicProvider.overrideWithValue(local),
         audioHandlerProvider.overrideWithValue(handler),
         // Over-the-air updates from GitHub Releases (Android only).
         updateDepsProvider.overrideWithValue(phoneUpdateDeps()),

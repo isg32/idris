@@ -20,6 +20,7 @@ import '../core/widgets/v_progress.dart';
 import '../core/widgets/v_surface.dart';
 import '../data/models.dart';
 import '../data/providers.dart';
+import '../platform/local_music.dart';
 import '../platform/youtube.dart';
 import 'player/player_sheet.dart';
 
@@ -297,6 +298,7 @@ class CacheGlyph extends ConsumerWidget {
         ),
       ),
       TrackCacheState.streams => const _Dashed(),
+      TrackCacheState.local => const VIconView(VIcon.phone, size: 18),
     };
   }
 }
@@ -321,6 +323,7 @@ String cacheWords(TrackCacheState s, double? progress) => switch (s) {
   TrackCacheState.cached => 'Cached',
   TrackCacheState.caching => 'Caching · ${((progress ?? 0) * 100).round()}%',
   TrackCacheState.streams => 'Streams',
+  TrackCacheState.local => 'On this phone',
 };
 
 /// A track in a list: number (or playing marker), title, state, length.
@@ -429,11 +432,12 @@ Future<void> showTrackActions(
 }) {
   final entry = ref.read(cacheEntriesProvider).value?[track.videoId];
   final pinned = track.pinned;
+  final local = isLocal(track.videoId);
   final keptByPlaylist =
       !pinned &&
       (ref.read(pinnedIdsProvider).value?.contains(track.videoId) ?? false);
   final facts = [
-    'Track',
+    if (local) 'On this phone' else 'Track',
     if (entry?.complete == true) 'Cached',
     if (entry != null && entry.kbps > 0) '${entry.kbps} kbps',
     if (entry?.complete == true) formatBytes(entry!.bytes),
@@ -471,16 +475,17 @@ Future<void> showTrackActions(
                 onTap: () =>
                     done(() => handler.addToQueue(track, source: source)),
               ),
-              VListRow(
-                leading: const VIconView(VIcon.pin),
-                title: pinned ? 'Unpin' : 'Pin offline',
-                value: pinned ? null : 'Never removed',
-                chevron: false,
-                onTap: () => done(() async {
-                  await library.setTrackPinned(track.videoId, !pinned);
-                  cache.kick();
-                }),
-              ),
+              if (!local)
+                VListRow(
+                  leading: const VIconView(VIcon.pin),
+                  title: pinned ? 'Unpin' : 'Pin offline',
+                  value: pinned ? null : 'Never removed',
+                  chevron: false,
+                  onTap: () => done(() async {
+                    await library.setTrackPinned(track.videoId, !pinned);
+                    cache.kick();
+                  }),
+                ),
               if (entry != null)
                 VListRow(
                   leading: const VIconView(VIcon.trash),
@@ -507,21 +512,24 @@ Future<void> showTrackActions(
               if (track.coverPath != null)
                 VListRow(
                   leading: const VIconView(VIcon.image),
-                  title: "Use YouTube's picture",
+                  title: local
+                      ? "Use the file's picture"
+                      : "Use YouTube's picture",
                   chevron: false,
                   onTap: () => done(() => resetTrackCover(ref, track)),
                 ),
-              VListRow(
-                leading: const VIconView(VIcon.external),
-                title: 'Open on YouTube',
-                chevron: false,
-                onTap: () => done(
-                  () => launchUrl(
-                    watchUrl(track.videoId),
-                    mode: LaunchMode.externalApplication,
+              if (!local)
+                VListRow(
+                  leading: const VIconView(VIcon.external),
+                  title: 'Open on YouTube',
+                  chevron: false,
+                  onTap: () => done(
+                    () => launchUrl(
+                      watchUrl(track.videoId),
+                      mode: LaunchMode.externalApplication,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ],

@@ -7,6 +7,7 @@ import 'package:just_audio/just_audio.dart';
 import '../data/library.dart';
 import '../data/models.dart';
 import 'cache_manager.dart';
+import 'local_music.dart';
 import 'playback_rules.dart';
 import 'youtube.dart';
 
@@ -195,7 +196,9 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
         duration: t.durationMs > 0
             ? Duration(milliseconds: t.durationMs)
             : null,
-        artUri: thumbnailUrl(t.videoId),
+        artUri: isLocal(t.videoId)
+            ? (await cache.artwork(t.videoId))?.uri
+            : thumbnailUrl(t.videoId),
       ),
     );
     try {

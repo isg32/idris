@@ -73,6 +73,32 @@ class Plays extends Table {
   DateTimeColumn get playedAt => dateTime()();
 }
 
+/// A folder on the phone the user chose for "On this phone" (a Storage
+/// Access Framework tree, readable for good once chosen).
+class LocalFolders extends Table {
+  TextColumn get uri => text()();
+  TextColumn get name => text()();
+  DateTimeColumn get addedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {uri};
+}
+
+/// An audio file in a [LocalFolders] folder, as the [Tracks] row with the
+/// same `videoId` (`local:…`), which holds its title, artist and length.
+class LocalFiles extends Table {
+  TextColumn get videoId => text()();
+  TextColumn get uri => text().unique()();
+  TextColumn get folderUri => text()();
+
+  /// When the file last changed, so a rescan reads only what's new.
+  IntColumn get modifiedMs => integer().withDefault(const Constant(0))();
+  IntColumn get bytes => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {videoId};
+}
+
 /// Settings, as key/value text.
 class Prefs extends Table {
   TextColumn get key => text()();
@@ -83,14 +109,23 @@ class Prefs extends Table {
 }
 
 @DriftDatabase(
-  tables: [Playlists, Tracks, PlaylistTracks, CacheEntries, Plays, Prefs],
+  tables: [
+    Playlists,
+    Tracks,
+    PlaylistTracks,
+    CacheEntries,
+    Plays,
+    Prefs,
+    LocalFolders,
+    LocalFiles,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
     : super(executor ?? driftDatabase(name: 'idris'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -99,6 +134,11 @@ class AppDatabase extends _$AppDatabase {
         // Covers the user chose.
         await m.addColumn(playlists, playlists.coverPath);
         await m.addColumn(tracks, tracks.coverPath);
+      }
+      if (from < 3) {
+        // Music from folders on the phone.
+        await m.createTable(localFolders);
+        await m.createTable(localFiles);
       }
     },
     beforeOpen: (details) async {

@@ -34,6 +34,10 @@ enum VIcon {
   download('M12 4v11M7 10l5 5l5-5M5 20h14'),
   warning('M12 3l10 18H2zM12 10v5M12 18h.01'),
   image('M4 5h16v14H4zM4 16l5-5l4 4l3-3l4 4M15 9h.01'),
+  phone(
+    'M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1M11 18h2',
+  ),
+  folder('M3 6h6l2 2h10v11H3z'),
   notCached('M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16'),
   sync('M20 11a8 8 0 0 0-14.6-4.5M4 4v3h3M4 13a8 8 0 0 0 14.6 4.5M20 20v-3h-3'),
   external(
