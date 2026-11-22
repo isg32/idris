@@ -75,6 +75,11 @@ class CacheManager {
   /// The video playing now (never evicted or pre-empted).
   String? playingId;
 
+  /// The track whose download playback started last, and the pinned track
+  /// the pre-cache worker is fetching.
+  String? _streamingId;
+  String? _workerId;
+
   StreamSubscription<Object?>? _pinSub;
   StreamSubscription<Object?>? _netSub;
   bool _working = false;
@@ -128,6 +133,17 @@ class CacheManager {
     AudioQuality quality, {
     int from = 0,
   }) async {
+    // Moving on from a track that hadn't finished caching: stop its
+    // download, so only the track playing now uses the network. Its
+    // `.part` file stays and resumes when it's played again. The worker's
+    // pinned download carries on.
+    final before = _streamingId;
+    if (before != null && before != videoId && before != _workerId) {
+      _active.remove(before)?.cancel();
+      _publishProgress();
+      kick(); // a pinned track left half-done goes back to the worker
+    }
+    _streamingId = videoId;
     final entry = await library.cacheEntry(videoId);
     if (entry != null && entry.complete && from == 0) {
       final f = File(entry.path);
@@ -347,6 +363,7 @@ class CacheManager {
           if (!await _networkAllows()) break;
           if (await library.track(id) == null) continue;
           final running = _active[id];
+          _workerId = id;
           try {
             if (running != null && running.error == null) {
               await running.done;
@@ -358,6 +375,8 @@ class CacheManager {
             }
           } on Object catch (e) {
             debugPrint('Pre-caching $id failed: $e');
+          } finally {
+            _workerId = null;
           }
         }
       }
