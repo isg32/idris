@@ -6,10 +6,10 @@
 
 **Your mantras and calm music, from your own YouTube playlists — and nothing else.**
 
-![Version](https://img.shields.io/badge/version-1.6.0-000000?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.0.0-000000?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/isg32/idris?style=flat-square&color=000000&label=release)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-000000?style=flat-square&logo=flutter&logoColor=white)
-![Platform](https://img.shields.io/badge/platform-Android-000000?style=flat-square&logo=android&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-Android%20%C2%B7%20Linux-000000?style=flat-square&logo=android&logoColor=white)
 ![License](https://img.shields.io/badge/license-GPL--3.0-000000?style=flat-square)
 
 </div>
@@ -55,13 +55,15 @@ Idris is a personal, sideloaded app, not distributed through the Play Store.
 | **Covers** | Every track shows its YouTube picture, cropped square, in lists, on Home and in the mini player, and blurred behind the player (Settings › Artwork, on by default). A playlist's cover is a mosaic of its first four tracks. Long-press a track or playlist (or tap a playlist's cover) to choose a picture from the phone instead; it's copied into Idris. All saved on the phone, so they show offline. |
 | **Crash reports** | An unexpected error shows a calm popup with the log, *Copy log* and *Save to Downloads*. A crash on the Android side is shown on the next launch. |
 | **Updates** | Idris updates itself from GitHub Releases: it checks at launch and every 6 hours (or from *Settings › Check for updates*), shows a card on Home and in Settings, downloads with progress (resuming after a drop), checks the size, SHA-256 and signer, and installs through Android's PackageInstaller. After the first update, Android installs the next ones without its confirm screen. *What's new* shows once afterwards. |
+| **Linux** | The same app on a Linux desktop, from the same code: YouTube streams found by the same NewPipe extractor (a small Java helper), audio through libmpv, and "On this computer" for folders of music on disk. |
+| **Layouts** | Three, by window size: mobile (tab bar and mini player), tablet (a rail of sections) and desktop (a sidebar with the playlists, pages in columns, a now-playing bar). |
 | **Glyph** | Optional, on Nothing phones: a slow breathing pulse on the strip while audio plays. |
 
 ---
 
 ## Architecture
 
-Idris is a Flutter app (Cupertino widgets only, no Material) with a thin native Kotlin layer for NewPipe's extractor and crash files.
+Idris is a Flutter app (Cupertino widgets only, no Material) for Android and Linux. On Android a thin native Kotlin layer runs NewPipe's extractor, the folder picker, the updater and crash files; on Linux NewPipe's extractor runs as a small Java helper (`linux/extractor`) and audio plays through libmpv.
 
 ```mermaid
 flowchart TB
@@ -142,6 +144,9 @@ Checked by tests on every run:
 | `lib/platform/updater.dart` | over-the-air updates: check, download, verify, install (with `updater_channel.dart`) |
 | `lib/features/` | Home, Library, Playlist, Player (panel, sheets, mini player), Settings, About, Onboarding |
 | `android/app/src/main/kotlin/` | `YouTubeChannel` (NewPipe), `CrashFiles` (native crashes, Downloads), `Updater` (PackageInstaller), `LocalMusic` (folder picker, tags, embedded art) |
+| `lib/core/layout.dart`, `lib/app/desktop.dart` | the three layouts by window size; the tablet and desktop frame (sidebar or rail, now-playing bar) |
+| `lib/platform/desktop_extractor.dart`, `linux/extractor/` | NewPipe on Linux: the Java helper and how Idris talks to it |
+| `linux/` | the Linux desktop runner |
 | `tool/live_playlist_test.dart` | a by-hand check against real YouTube playlists |
 
 ---
@@ -153,6 +158,7 @@ Checked by tests on every run:
 - Flutter 3.47 or later (Dart 3.13)
 - Android SDK 36 and JDK 17
 - Any recent Android phone; a Nothing phone for the Glyph pulse
+- For Linux: GTK 3, libmpv, clang, CMake and Ninja (e.g. `gtk3 mpv clang cmake ninja` on Arch)
 
 ### Build and run
 
@@ -162,6 +168,13 @@ dart run build_runner build        # drift code generation
 flutter analyze
 flutter test
 flutter run                        # with the phone connected over USB debugging
+```
+
+On Linux:
+
+```sh
+./android/gradlew -p linux/extractor installDist   # the NewPipe helper
+flutter run -d linux                               # run from the repo root
 ```
 
 ### Signed releases
