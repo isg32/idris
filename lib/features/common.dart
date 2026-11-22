@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -83,16 +85,28 @@ class ThumbTile extends StatelessWidget {
 
 /// A track's thumbnail (Settings → Artwork), else the outlined tile.
 class TrackArt extends ConsumerWidget {
-  const TrackArt(this.videoId, {super.key, this.size = 64, this.radius = 14});
+  const TrackArt(
+    this.videoId, {
+    super.key,
+    this.size = 64,
+    this.radius = 14,
+    this.tile = true,
+  });
 
   final String videoId;
   final double size;
   final double radius;
 
+  /// Without a cover: the outlined tile, or (false, in a mosaic) nothing.
+  final bool tile;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final file = ref.watch(artworkProvider(videoId)).value;
-    if (file == null) return ThumbTile(size: size, radius: radius);
+    final none = tile
+        ? ThumbTile(size: size, radius: radius)
+        : SizedBox.square(dimension: size);
+    if (file == null) return none;
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: Image.file(
@@ -101,10 +115,114 @@ class TrackArt extends ConsumerWidget {
         height: size,
         fit: BoxFit.cover,
         gaplessPlayback: true,
-        errorBuilder: (_, _, _) => ThumbTile(size: size, radius: radius),
+        errorBuilder: (_, _, _) => none,
       ),
     );
   }
+}
+
+/// A playlist's cover: the one the user chose, else its first four tracks'
+/// covers in a 2×2 grid (one cover when it has fewer), else the tile.
+class PlaylistCover extends ConsumerWidget {
+  const PlaylistCover(
+    this.playlist, {
+    super.key,
+    this.size = 64,
+    this.radius = 14,
+  });
+
+  final Playlist playlist;
+  final double size;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final chosen = playlist.coverPath;
+    if (chosen != null && File(chosen).existsSync()) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: Image.file(
+          File(chosen),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (_, _, _) => ThumbTile(size: size, radius: radius),
+        ),
+      );
+    }
+    final ids = [
+      for (final t
+          in ref.watch(playlistTracksProvider(playlist.id)).value ??
+              const <Track>[])
+        t.videoId,
+    ].take(4).toList();
+    if (ids.isEmpty) return ThumbTile(size: size, radius: radius);
+    if (ids.length < 4) return TrackArt(ids.first, size: size, radius: radius);
+    final half = size / 2;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: SizedBox.square(
+        dimension: size,
+        child: Wrap(
+          children: [
+            for (final id in ids)
+              TrackArt(id, size: half, radius: 0, tile: false),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Lets the user pick an image from the phone; null if they don't.
+Future<String?> _pickImage() async {
+  final picked = await FilePicker.pickFiles(type: FileType.image);
+  return picked.isEmpty ? null : picked.first.path;
+}
+
+void _deleteQuietly(String? path) {
+  if (path == null) return;
+  try {
+    final f = File(path);
+    if (f.existsSync()) f.deleteSync();
+  } on Object {
+    // Tidied at the next launch.
+  }
+}
+
+/// Long-press → Choose cover: a picture from the phone for [track].
+Future<void> chooseTrackCover(WidgetRef ref, Track track) async {
+  final path = await _pickImage();
+  if (path == null) return;
+  final kept = await ref
+      .read(coversProvider)
+      .keep(path, 'track-${track.videoId}');
+  await ref.read(libraryProvider).setTrackCover(track.videoId, kept);
+  _deleteQuietly(track.coverPath);
+}
+
+/// Back to YouTube's picture for [track].
+Future<void> resetTrackCover(WidgetRef ref, Track track) async {
+  await ref.read(libraryProvider).setTrackCover(track.videoId, null);
+  _deleteQuietly(track.coverPath);
+}
+
+/// Choose cover: a picture from the phone for [playlist].
+Future<void> choosePlaylistCover(WidgetRef ref, Playlist playlist) async {
+  final path = await _pickImage();
+  if (path == null) return;
+  final kept = await ref
+      .read(coversProvider)
+      .keep(path, 'playlist-${playlist.id}');
+  await ref.read(libraryProvider).setPlaylistCover(playlist.id, kept);
+  _deleteQuietly(playlist.coverPath);
+}
+
+/// Back to the mosaic for [playlist].
+Future<void> resetPlaylistCover(WidgetRef ref, Playlist playlist) async {
+  await ref.read(libraryProvider).setPlaylistCover(playlist.id, null);
+  _deleteQuietly(playlist.coverPath);
 }
 
 /// The small glyph at the end of a track row.
@@ -200,6 +318,8 @@ class TrackRow extends ConsumerWidget {
               ),
             ),
           if (playing || number != null) const SizedBox(width: 12),
+          TrackArt(track.videoId, size: 44, radius: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,6 +440,20 @@ Future<void> showTrackActions(
                   }),
                 ),
               VListRow(
+                leading: const VIconView(VIcon.image),
+                title: 'Choose cover…',
+                subtitle: 'A picture from your phone',
+                chevron: false,
+                onTap: () => done(() => chooseTrackCover(ref, track)),
+              ),
+              if (track.coverPath != null)
+                VListRow(
+                  leading: const VIconView(VIcon.image),
+                  title: "Use YouTube's picture",
+                  chevron: false,
+                  onTap: () => done(() => resetTrackCover(ref, track)),
+                ),
+              VListRow(
                 leading: const VIconView(VIcon.external),
                 title: 'Open on YouTube',
                 chevron: false,
@@ -407,7 +541,7 @@ class PlaylistCard extends ConsumerWidget {
       onLongPress: onLongPress,
       child: Row(
         children: [
-          const ThumbTile(),
+          PlaylistCover(s.playlist),
           const SizedBox(width: 14),
           Expanded(
             child: Column(

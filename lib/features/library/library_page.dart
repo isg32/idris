@@ -214,6 +214,21 @@ Future<void> showPlaylistActions(
             onTap: () => done(() => ref.read(syncOneProvider)(s.id)),
           ),
           VListRow(
+            leading: const VIconView(VIcon.image),
+            title: 'Choose cover…',
+            subtitle: 'A picture from your phone',
+            chevron: false,
+            onTap: () => done(() => choosePlaylistCover(ref, s.playlist)),
+          ),
+          if (s.playlist.coverPath != null)
+            VListRow(
+              leading: const VIconView(VIcon.image),
+              title: 'Use the mosaic',
+              subtitle: 'The first four tracks\' covers',
+              chevron: false,
+              onTap: () => done(() => resetPlaylistCover(ref, s.playlist)),
+            ),
+          VListRow(
             leading: const VIconView(VIcon.playNext),
             title: 'Rename',
             chevron: false,

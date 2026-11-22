@@ -12,6 +12,7 @@ import 'data/library.dart';
 import 'data/providers.dart';
 import 'platform/audio_handler.dart';
 import 'platform/cache_manager.dart';
+import 'platform/covers.dart';
 import 'platform/crash_log.dart';
 import 'platform/updater.dart';
 import 'features/crash_overlay.dart';
@@ -29,6 +30,9 @@ Future<void> main() async {
 
   final library = Library(AppDatabase());
   final cache = CacheManager(library);
+  final covers = Covers();
+  // Covers of playlists and tracks that are gone.
+  unawaited(library.coverPaths().then(covers.tidy).catchError((Object _) {}));
   // Playback runs as a media service, so it carries on in the background.
   final handler = await initAudio(library: library, cache: cache);
   final onboarded =
@@ -42,6 +46,7 @@ Future<void> main() async {
       overrides: [
         libraryProvider.overrideWithValue(library),
         cacheManagerProvider.overrideWithValue(cache),
+        coversProvider.overrideWithValue(covers),
         audioHandlerProvider.overrideWithValue(handler),
         // Over-the-air updates from GitHub Releases (Android only).
         updateDepsProvider.overrideWithValue(phoneUpdateDeps()),

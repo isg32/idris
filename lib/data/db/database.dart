@@ -14,6 +14,9 @@ class Playlists extends Table {
 
   /// "Available offline": every track is pre-cached and kept.
   BoolColumn get pinned => boolean().withDefault(const Constant(false))();
+
+  /// A cover the user chose (a file in `covers/`), instead of the mosaic.
+  TextColumn get coverPath => text().nullable()();
 }
 
 /// A YouTube video, shared by every playlist it is in.
@@ -25,6 +28,9 @@ class Tracks extends Table {
 
   /// Pinned on its own (long-press → Pin offline).
   BoolColumn get pinned => boolean().withDefault(const Constant(false))();
+
+  /// A cover the user chose (a file in `covers/`), instead of YouTube's.
+  TextColumn get coverPath => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {videoId};
@@ -84,10 +90,17 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'idris'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        // Covers the user chose.
+        await m.addColumn(playlists, playlists.coverPath);
+        await m.addColumn(tracks, tracks.coverPath);
+      }
+    },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },

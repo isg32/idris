@@ -8,6 +8,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../platform/audio_handler.dart';
 import '../platform/cache_manager.dart';
+import '../platform/covers.dart';
 import '../platform/glyph.dart';
 import '../platform/youtube.dart';
 import 'library.dart';
@@ -111,9 +112,21 @@ final trackCacheStateProvider = Provider.family<TrackCacheState, String>((
   return TrackCacheState.streams;
 });
 
-/// A track's artwork, when Settings → Artwork is on: the saved thumbnail,
-/// else none (the waveform tile shows instead).
+/// Where the covers the user chose are kept.
+final coversProvider = Provider<Covers>((ref) => Covers());
+
+final trackProvider = StreamProvider.family<Track?, String>(
+  (ref, videoId) => ref.watch(libraryProvider).watchTrack(videoId),
+);
+
+/// A track's cover: the one the user chose, else (when Settings → Artwork
+/// is on) YouTube's picture, saved beside the audio; else none (the
+/// waveform tile shows instead).
 final artworkProvider = FutureProvider.family<File?, String>((ref, videoId) {
+  final chosen = ref.watch(trackProvider(videoId)).value?.coverPath;
+  if (chosen != null && File(chosen).existsSync()) {
+    return Future.value(File(chosen));
+  }
   final on = ref.watch(settingsProvider).value?.artwork ?? true;
   if (!on) return Future.value();
   return ref.watch(cacheManagerProvider).artwork(videoId);

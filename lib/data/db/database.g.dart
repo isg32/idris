@@ -88,6 +88,17 @@ class $PlaylistsTable extends Playlists
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _coverPathMeta = const VerificationMeta(
+    'coverPath',
+  );
+  @override
+  late final GeneratedColumn<String> coverPath = GeneratedColumn<String>(
+    'cover_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -97,6 +108,7 @@ class $PlaylistsTable extends Playlists
     importedAt,
     lastSyncedAt,
     pinned,
+    coverPath,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -158,6 +170,12 @@ class $PlaylistsTable extends Playlists
         pinned.isAcceptableOrUnknown(data['pinned']!, _pinnedMeta),
       );
     }
+    if (data.containsKey('cover_path')) {
+      context.handle(
+        _coverPathMeta,
+        coverPath.isAcceptableOrUnknown(data['cover_path']!, _coverPathMeta),
+      );
+    }
     return context;
   }
 
@@ -195,6 +213,10 @@ class $PlaylistsTable extends Playlists
         DriftSqlType.bool,
         data['${effectivePrefix}pinned'],
       )!,
+      coverPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cover_path'],
+      ),
     );
   }
 
@@ -214,6 +236,9 @@ class Playlist extends DataClass implements Insertable<Playlist> {
 
   /// "Available offline": every track is pre-cached and kept.
   final bool pinned;
+
+  /// A cover the user chose (a file in `covers/`), instead of the mosaic.
+  final String? coverPath;
   const Playlist({
     required this.id,
     required this.ytId,
@@ -222,6 +247,7 @@ class Playlist extends DataClass implements Insertable<Playlist> {
     required this.importedAt,
     this.lastSyncedAt,
     required this.pinned,
+    this.coverPath,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -235,6 +261,9 @@ class Playlist extends DataClass implements Insertable<Playlist> {
       map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
     }
     map['pinned'] = Variable<bool>(pinned);
+    if (!nullToAbsent || coverPath != null) {
+      map['cover_path'] = Variable<String>(coverPath);
+    }
     return map;
   }
 
@@ -249,6 +278,9 @@ class Playlist extends DataClass implements Insertable<Playlist> {
           ? const Value.absent()
           : Value(lastSyncedAt),
       pinned: Value(pinned),
+      coverPath: coverPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverPath),
     );
   }
 
@@ -265,6 +297,7 @@ class Playlist extends DataClass implements Insertable<Playlist> {
       importedAt: serializer.fromJson<DateTime>(json['importedAt']),
       lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
       pinned: serializer.fromJson<bool>(json['pinned']),
+      coverPath: serializer.fromJson<String?>(json['coverPath']),
     );
   }
   @override
@@ -278,6 +311,7 @@ class Playlist extends DataClass implements Insertable<Playlist> {
       'importedAt': serializer.toJson<DateTime>(importedAt),
       'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
       'pinned': serializer.toJson<bool>(pinned),
+      'coverPath': serializer.toJson<String?>(coverPath),
     };
   }
 
@@ -289,6 +323,7 @@ class Playlist extends DataClass implements Insertable<Playlist> {
     DateTime? importedAt,
     Value<DateTime?> lastSyncedAt = const Value.absent(),
     bool? pinned,
+    Value<String?> coverPath = const Value.absent(),
   }) => Playlist(
     id: id ?? this.id,
     ytId: ytId ?? this.ytId,
@@ -297,6 +332,7 @@ class Playlist extends DataClass implements Insertable<Playlist> {
     importedAt: importedAt ?? this.importedAt,
     lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
     pinned: pinned ?? this.pinned,
+    coverPath: coverPath.present ? coverPath.value : this.coverPath,
   );
   Playlist copyWithCompanion(PlaylistsCompanion data) {
     return Playlist(
@@ -311,6 +347,7 @@ class Playlist extends DataClass implements Insertable<Playlist> {
           ? data.lastSyncedAt.value
           : this.lastSyncedAt,
       pinned: data.pinned.present ? data.pinned.value : this.pinned,
+      coverPath: data.coverPath.present ? data.coverPath.value : this.coverPath,
     );
   }
 
@@ -323,14 +360,23 @@ class Playlist extends DataClass implements Insertable<Playlist> {
           ..write('channel: $channel, ')
           ..write('importedAt: $importedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
-          ..write('pinned: $pinned')
+          ..write('pinned: $pinned, ')
+          ..write('coverPath: $coverPath')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, ytId, title, channel, importedAt, lastSyncedAt, pinned);
+  int get hashCode => Object.hash(
+    id,
+    ytId,
+    title,
+    channel,
+    importedAt,
+    lastSyncedAt,
+    pinned,
+    coverPath,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -341,7 +387,8 @@ class Playlist extends DataClass implements Insertable<Playlist> {
           other.channel == this.channel &&
           other.importedAt == this.importedAt &&
           other.lastSyncedAt == this.lastSyncedAt &&
-          other.pinned == this.pinned);
+          other.pinned == this.pinned &&
+          other.coverPath == this.coverPath);
 }
 
 class PlaylistsCompanion extends UpdateCompanion<Playlist> {
@@ -352,6 +399,7 @@ class PlaylistsCompanion extends UpdateCompanion<Playlist> {
   final Value<DateTime> importedAt;
   final Value<DateTime?> lastSyncedAt;
   final Value<bool> pinned;
+  final Value<String?> coverPath;
   const PlaylistsCompanion({
     this.id = const Value.absent(),
     this.ytId = const Value.absent(),
@@ -360,6 +408,7 @@ class PlaylistsCompanion extends UpdateCompanion<Playlist> {
     this.importedAt = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
     this.pinned = const Value.absent(),
+    this.coverPath = const Value.absent(),
   });
   PlaylistsCompanion.insert({
     this.id = const Value.absent(),
@@ -369,6 +418,7 @@ class PlaylistsCompanion extends UpdateCompanion<Playlist> {
     required DateTime importedAt,
     this.lastSyncedAt = const Value.absent(),
     this.pinned = const Value.absent(),
+    this.coverPath = const Value.absent(),
   }) : ytId = Value(ytId),
        title = Value(title),
        importedAt = Value(importedAt);
@@ -380,6 +430,7 @@ class PlaylistsCompanion extends UpdateCompanion<Playlist> {
     Expression<DateTime>? importedAt,
     Expression<DateTime>? lastSyncedAt,
     Expression<bool>? pinned,
+    Expression<String>? coverPath,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -389,6 +440,7 @@ class PlaylistsCompanion extends UpdateCompanion<Playlist> {
       if (importedAt != null) 'imported_at': importedAt,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
       if (pinned != null) 'pinned': pinned,
+      if (coverPath != null) 'cover_path': coverPath,
     });
   }
 
@@ -400,6 +452,7 @@ class PlaylistsCompanion extends UpdateCompanion<Playlist> {
     Value<DateTime>? importedAt,
     Value<DateTime?>? lastSyncedAt,
     Value<bool>? pinned,
+    Value<String?>? coverPath,
   }) {
     return PlaylistsCompanion(
       id: id ?? this.id,
@@ -409,6 +462,7 @@ class PlaylistsCompanion extends UpdateCompanion<Playlist> {
       importedAt: importedAt ?? this.importedAt,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       pinned: pinned ?? this.pinned,
+      coverPath: coverPath ?? this.coverPath,
     );
   }
 
@@ -436,6 +490,9 @@ class PlaylistsCompanion extends UpdateCompanion<Playlist> {
     if (pinned.present) {
       map['pinned'] = Variable<bool>(pinned.value);
     }
+    if (coverPath.present) {
+      map['cover_path'] = Variable<String>(coverPath.value);
+    }
     return map;
   }
 
@@ -448,7 +505,8 @@ class PlaylistsCompanion extends UpdateCompanion<Playlist> {
           ..write('channel: $channel, ')
           ..write('importedAt: $importedAt, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
-          ..write('pinned: $pinned')
+          ..write('pinned: $pinned, ')
+          ..write('coverPath: $coverPath')
           ..write(')'))
         .toString();
   }
@@ -516,6 +574,17 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _coverPathMeta = const VerificationMeta(
+    'coverPath',
+  );
+  @override
+  late final GeneratedColumn<String> coverPath = GeneratedColumn<String>(
+    'cover_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     videoId,
@@ -523,6 +592,7 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     channel,
     durationMs,
     pinned,
+    coverPath,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -570,6 +640,12 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         pinned.isAcceptableOrUnknown(data['pinned']!, _pinnedMeta),
       );
     }
+    if (data.containsKey('cover_path')) {
+      context.handle(
+        _coverPathMeta,
+        coverPath.isAcceptableOrUnknown(data['cover_path']!, _coverPathMeta),
+      );
+    }
     return context;
   }
 
@@ -599,6 +675,10 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         DriftSqlType.bool,
         data['${effectivePrefix}pinned'],
       )!,
+      coverPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cover_path'],
+      ),
     );
   }
 
@@ -616,12 +696,16 @@ class Track extends DataClass implements Insertable<Track> {
 
   /// Pinned on its own (long-press → Pin offline).
   final bool pinned;
+
+  /// A cover the user chose (a file in `covers/`), instead of YouTube's.
+  final String? coverPath;
   const Track({
     required this.videoId,
     required this.title,
     required this.channel,
     required this.durationMs,
     required this.pinned,
+    this.coverPath,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -631,6 +715,9 @@ class Track extends DataClass implements Insertable<Track> {
     map['channel'] = Variable<String>(channel);
     map['duration_ms'] = Variable<int>(durationMs);
     map['pinned'] = Variable<bool>(pinned);
+    if (!nullToAbsent || coverPath != null) {
+      map['cover_path'] = Variable<String>(coverPath);
+    }
     return map;
   }
 
@@ -641,6 +728,9 @@ class Track extends DataClass implements Insertable<Track> {
       channel: Value(channel),
       durationMs: Value(durationMs),
       pinned: Value(pinned),
+      coverPath: coverPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverPath),
     );
   }
 
@@ -655,6 +745,7 @@ class Track extends DataClass implements Insertable<Track> {
       channel: serializer.fromJson<String>(json['channel']),
       durationMs: serializer.fromJson<int>(json['durationMs']),
       pinned: serializer.fromJson<bool>(json['pinned']),
+      coverPath: serializer.fromJson<String?>(json['coverPath']),
     );
   }
   @override
@@ -666,6 +757,7 @@ class Track extends DataClass implements Insertable<Track> {
       'channel': serializer.toJson<String>(channel),
       'durationMs': serializer.toJson<int>(durationMs),
       'pinned': serializer.toJson<bool>(pinned),
+      'coverPath': serializer.toJson<String?>(coverPath),
     };
   }
 
@@ -675,12 +767,14 @@ class Track extends DataClass implements Insertable<Track> {
     String? channel,
     int? durationMs,
     bool? pinned,
+    Value<String?> coverPath = const Value.absent(),
   }) => Track(
     videoId: videoId ?? this.videoId,
     title: title ?? this.title,
     channel: channel ?? this.channel,
     durationMs: durationMs ?? this.durationMs,
     pinned: pinned ?? this.pinned,
+    coverPath: coverPath.present ? coverPath.value : this.coverPath,
   );
   Track copyWithCompanion(TracksCompanion data) {
     return Track(
@@ -691,6 +785,7 @@ class Track extends DataClass implements Insertable<Track> {
           ? data.durationMs.value
           : this.durationMs,
       pinned: data.pinned.present ? data.pinned.value : this.pinned,
+      coverPath: data.coverPath.present ? data.coverPath.value : this.coverPath,
     );
   }
 
@@ -701,13 +796,15 @@ class Track extends DataClass implements Insertable<Track> {
           ..write('title: $title, ')
           ..write('channel: $channel, ')
           ..write('durationMs: $durationMs, ')
-          ..write('pinned: $pinned')
+          ..write('pinned: $pinned, ')
+          ..write('coverPath: $coverPath')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(videoId, title, channel, durationMs, pinned);
+  int get hashCode =>
+      Object.hash(videoId, title, channel, durationMs, pinned, coverPath);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -716,7 +813,8 @@ class Track extends DataClass implements Insertable<Track> {
           other.title == this.title &&
           other.channel == this.channel &&
           other.durationMs == this.durationMs &&
-          other.pinned == this.pinned);
+          other.pinned == this.pinned &&
+          other.coverPath == this.coverPath);
 }
 
 class TracksCompanion extends UpdateCompanion<Track> {
@@ -725,6 +823,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
   final Value<String> channel;
   final Value<int> durationMs;
   final Value<bool> pinned;
+  final Value<String?> coverPath;
   final Value<int> rowid;
   const TracksCompanion({
     this.videoId = const Value.absent(),
@@ -732,6 +831,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.channel = const Value.absent(),
     this.durationMs = const Value.absent(),
     this.pinned = const Value.absent(),
+    this.coverPath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TracksCompanion.insert({
@@ -740,6 +840,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.channel = const Value.absent(),
     this.durationMs = const Value.absent(),
     this.pinned = const Value.absent(),
+    this.coverPath = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : videoId = Value(videoId),
        title = Value(title);
@@ -749,6 +850,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Expression<String>? channel,
     Expression<int>? durationMs,
     Expression<bool>? pinned,
+    Expression<String>? coverPath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -757,6 +859,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       if (channel != null) 'channel': channel,
       if (durationMs != null) 'duration_ms': durationMs,
       if (pinned != null) 'pinned': pinned,
+      if (coverPath != null) 'cover_path': coverPath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -767,6 +870,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Value<String>? channel,
     Value<int>? durationMs,
     Value<bool>? pinned,
+    Value<String?>? coverPath,
     Value<int>? rowid,
   }) {
     return TracksCompanion(
@@ -775,6 +879,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       channel: channel ?? this.channel,
       durationMs: durationMs ?? this.durationMs,
       pinned: pinned ?? this.pinned,
+      coverPath: coverPath ?? this.coverPath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -797,6 +902,9 @@ class TracksCompanion extends UpdateCompanion<Track> {
     if (pinned.present) {
       map['pinned'] = Variable<bool>(pinned.value);
     }
+    if (coverPath.present) {
+      map['cover_path'] = Variable<String>(coverPath.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -811,6 +919,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
           ..write('channel: $channel, ')
           ..write('durationMs: $durationMs, ')
           ..write('pinned: $pinned, ')
+          ..write('coverPath: $coverPath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2204,6 +2313,7 @@ typedef $$PlaylistsTableCreateCompanionBuilder = PlaylistsCompanion Function({
   required DateTime importedAt,
   Value<DateTime?> lastSyncedAt,
   Value<bool> pinned,
+  Value<String?> coverPath,
 });
 typedef $$PlaylistsTableUpdateCompanionBuilder = PlaylistsCompanion Function({
   Value<int> id,
@@ -2213,6 +2323,7 @@ typedef $$PlaylistsTableUpdateCompanionBuilder = PlaylistsCompanion Function({
   Value<DateTime> importedAt,
   Value<DateTime?> lastSyncedAt,
   Value<bool> pinned,
+  Value<String?> coverPath,
 });
 
 final class $$PlaylistsTableReferences
@@ -2279,6 +2390,11 @@ class $$PlaylistsTableFilterComposer
 
   ColumnFilters<bool> get pinned => $composableBuilder(
     column: $table.pinned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverPath => $composableBuilder(
+    column: $table.coverPath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2351,6 +2467,11 @@ class $$PlaylistsTableOrderingComposer
     column: $table.pinned,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get coverPath => $composableBuilder(
+    column: $table.coverPath,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PlaylistsTableAnnotationComposer
@@ -2386,6 +2507,9 @@ class $$PlaylistsTableAnnotationComposer
 
   GeneratedColumn<bool> get pinned =>
       $composableBuilder(column: $table.pinned, builder: (column) => column);
+
+  GeneratedColumn<String> get coverPath =>
+      $composableBuilder(column: $table.coverPath, builder: (column) => column);
 
   Expression<T> playlistTracksRefs<T extends Object>(
     Expression<T> Function($$PlaylistTracksTableAnnotationComposer a) f,
@@ -2448,6 +2572,7 @@ class $$PlaylistsTableTableManager
                 Value<DateTime> importedAt = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
                 Value<bool> pinned = const Value.absent(),
+                Value<String?> coverPath = const Value.absent(),
               }) => PlaylistsCompanion(
                 id: id,
                 ytId: ytId,
@@ -2456,6 +2581,7 @@ class $$PlaylistsTableTableManager
                 importedAt: importedAt,
                 lastSyncedAt: lastSyncedAt,
                 pinned: pinned,
+                coverPath: coverPath,
               ),
           createCompanionCallback:
               ({
@@ -2466,6 +2592,7 @@ class $$PlaylistsTableTableManager
                 required DateTime importedAt,
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
                 Value<bool> pinned = const Value.absent(),
+                Value<String?> coverPath = const Value.absent(),
               }) => PlaylistsCompanion.insert(
                 id: id,
                 ytId: ytId,
@@ -2474,6 +2601,7 @@ class $$PlaylistsTableTableManager
                 importedAt: importedAt,
                 lastSyncedAt: lastSyncedAt,
                 pinned: pinned,
+                coverPath: coverPath,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -2540,6 +2668,7 @@ typedef $$TracksTableCreateCompanionBuilder = TracksCompanion Function({
   Value<String> channel,
   Value<int> durationMs,
   Value<bool> pinned,
+  Value<String?> coverPath,
   Value<int> rowid,
 });
 typedef $$TracksTableUpdateCompanionBuilder = TracksCompanion Function({
@@ -2548,6 +2677,7 @@ typedef $$TracksTableUpdateCompanionBuilder = TracksCompanion Function({
   Value<String> channel,
   Value<int> durationMs,
   Value<bool> pinned,
+  Value<String?> coverPath,
   Value<int> rowid,
 });
 
@@ -2605,6 +2735,11 @@ class $$TracksTableFilterComposer
 
   ColumnFilters<bool> get pinned => $composableBuilder(
     column: $table.pinned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coverPath => $composableBuilder(
+    column: $table.coverPath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2667,6 +2802,11 @@ class $$TracksTableOrderingComposer
     column: $table.pinned,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get coverPath => $composableBuilder(
+    column: $table.coverPath,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TracksTableAnnotationComposer
@@ -2694,6 +2834,9 @@ class $$TracksTableAnnotationComposer
 
   GeneratedColumn<bool> get pinned =>
       $composableBuilder(column: $table.pinned, builder: (column) => column);
+
+  GeneratedColumn<String> get coverPath =>
+      $composableBuilder(column: $table.coverPath, builder: (column) => column);
 
   Expression<T> playlistTracksRefs<T extends Object>(
     Expression<T> Function($$PlaylistTracksTableAnnotationComposer a) f,
@@ -2754,6 +2897,7 @@ class $$TracksTableTableManager
                 Value<String> channel = const Value.absent(),
                 Value<int> durationMs = const Value.absent(),
                 Value<bool> pinned = const Value.absent(),
+                Value<String?> coverPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TracksCompanion(
                 videoId: videoId,
@@ -2761,6 +2905,7 @@ class $$TracksTableTableManager
                 channel: channel,
                 durationMs: durationMs,
                 pinned: pinned,
+                coverPath: coverPath,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2770,6 +2915,7 @@ class $$TracksTableTableManager
                 Value<String> channel = const Value.absent(),
                 Value<int> durationMs = const Value.absent(),
                 Value<bool> pinned = const Value.absent(),
+                Value<String?> coverPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TracksCompanion.insert(
                 videoId: videoId,
@@ -2777,6 +2923,7 @@ class $$TracksTableTableManager
                 channel: channel,
                 durationMs: durationMs,
                 pinned: pinned,
+                coverPath: coverPath,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

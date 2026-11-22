@@ -1,13 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/icons/v_icons.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_controls.dart';
+import '../../core/widgets/v_glass.dart';
 import '../../core/widgets/v_list.dart';
 import '../../core/widgets/v_page.dart';
 import '../../core/widgets/v_progress.dart';
 import '../../core/widgets/v_surface.dart';
+import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../common.dart';
 import '../player/mini_player.dart';
@@ -46,10 +51,22 @@ class PlaylistPage extends ConsumerWidget {
       title: playlist.title,
       onRefresh: () async => ref.read(syncOneProvider)(id),
       children: [
-        Text(
-          '${tracks.length} tracks · '
-          '${totalLength(Duration(milliseconds: total))}$synced',
-          style: VText.inter(13, weight: 300),
+        Row(
+          children: [
+            // Tap the cover to change it.
+            VTappable(
+              onTap: () => _coverActions(context, ref, playlist),
+              child: PlaylistCover(playlist, size: 96, radius: 18),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                '${tracks.length} tracks · '
+                '${totalLength(Duration(milliseconds: total))}$synced',
+                style: VText.inter(13, weight: 300),
+              ),
+            ),
+          ],
         ),
         Row(
           children: [
@@ -157,3 +174,39 @@ class PlaylistPage extends ConsumerWidget {
     );
   }
 }
+
+/// The playlist's cover: choose a picture, or go back to the mosaic.
+Future<void> _coverActions(
+  BuildContext context,
+  WidgetRef ref,
+  Playlist playlist,
+) => showVSheet<void>(
+  context,
+  title: 'Cover',
+  builder: (sheet) {
+    void done(Future<void> Function() action) {
+      Navigator.of(sheet).pop();
+      unawaited(action());
+    }
+
+    return VListSection(
+      children: [
+        VListRow(
+          leading: const VIconView(VIcon.image),
+          title: 'Choose cover…',
+          subtitle: 'A picture from your phone',
+          chevron: false,
+          onTap: () => done(() => choosePlaylistCover(ref, playlist)),
+        ),
+        if (playlist.coverPath != null)
+          VListRow(
+            leading: const VIconView(VIcon.image),
+            title: 'Use the mosaic',
+            subtitle: "The first four tracks' covers",
+            chevron: false,
+            onTap: () => done(() => resetPlaylistCover(ref, playlist)),
+          ),
+      ],
+    );
+  },
+);

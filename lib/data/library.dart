@@ -143,6 +143,29 @@ class Library {
         PlaylistsCompanion(pinned: Value(pinned)),
       );
 
+  /// A cover the user chose for the playlist, or null for the mosaic.
+  Future<void> setPlaylistCover(int id, String? path) =>
+      (db.update(db.playlists)..where((p) => p.id.equals(id))).write(
+        PlaylistsCompanion(coverPath: Value(path)),
+      );
+
+  /// A cover the user chose for the track, or null for YouTube's picture.
+  Future<void> setTrackCover(String videoId, String? path) =>
+      (db.update(db.tracks)..where((t) => t.videoId.equals(videoId))).write(
+        TracksCompanion(coverPath: Value(path)),
+      );
+
+  /// Every cover the user chose that's still in use.
+  Future<Set<String>> coverPaths() async {
+    final rows = await db
+        .customSelect(
+          'SELECT cover_path FROM playlists WHERE cover_path IS NOT NULL '
+          'UNION SELECT cover_path FROM tracks WHERE cover_path IS NOT NULL',
+        )
+        .get();
+    return {for (final r in rows) r.read<String>('cover_path')};
+  }
+
   Future<void> setTrackPinned(String videoId, bool pinned) =>
       (db.update(db.tracks)..where((t) => t.videoId.equals(videoId))).write(
         TracksCompanion(pinned: Value(pinned)),
@@ -274,6 +297,10 @@ class Library {
   Future<Track?> track(String videoId) => (db.select(
     db.tracks,
   )..where((t) => t.videoId.equals(videoId))).getSingleOrNull();
+
+  Stream<Track?> watchTrack(String videoId) => (db.select(
+    db.tracks,
+  )..where((t) => t.videoId.equals(videoId))).watchSingleOrNull();
 
   Future<void> setDuration(String videoId, Duration d) =>
       (db.update(db.tracks)..where((t) => t.videoId.equals(videoId))).write(
