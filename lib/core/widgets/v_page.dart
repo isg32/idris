@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 import '../icons/v_icons.dart';
+import '../layout.dart';
 import 'v_ink.dart';
 import '../theme/v_text.dart';
 import '../theme/v_tokens.dart';
@@ -154,7 +155,8 @@ class VTabPage extends StatelessWidget {
                 VSpace.gutter,
                 0,
                 VSpace.gutter,
-                VSpace.tabBarClearance + VBottomInset.of(context),
+                (desktopLayout ? 40 : VSpace.tabBarClearance) +
+                    VBottomInset.of(context),
               ),
               sliver: SliverList.list(children: _gapped(children)),
             ),

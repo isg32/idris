@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/icons/v_icons.dart';
+import '../core/layout.dart';
 import '../core/widgets/v_ink.dart';
 import '../core/theme/v_text.dart';
 import '../core/theme/v_tokens.dart';
@@ -71,6 +72,16 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final shell = widget.shell;
+    // On a desktop the sidebar and now-playing bar (DesktopFrame) stand in
+    // for the tab bar and mini player.
+    if (desktopLayout) {
+      return Stack(
+        children: [
+          Positioned.fill(child: shell),
+          const _UpdateListener(),
+        ],
+      );
+    }
     final bottom = MediaQuery.paddingOf(context).bottom;
     return Consumer(
       builder: (context, ref, _) {

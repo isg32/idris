@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/layout.dart';
 import '../core/theme/v_colors.dart';
 import '../core/theme/v_palette.dart';
 import '../core/theme/v_text.dart';
@@ -12,6 +13,7 @@ import '../core/theme/v_theme.dart';
 import '../data/providers.dart';
 import '../features/crash_overlay.dart';
 import '../platform/glyph.dart';
+import 'desktop.dart';
 
 /// Follows the system light/dark setting; there is no in-app toggle.
 class IdrisApp extends ConsumerStatefulWidget {
@@ -95,7 +97,14 @@ class _IdrisAppState extends ConsumerState<IdrisApp>
             style: VText.body.copyWith(color: p.ink),
             child: ColoredBox(
               color: p.paper,
-              child: CrashOverlay(child: child ?? const SizedBox.shrink()),
+              child: CrashOverlay(
+                child: desktopLayout
+                    ? DesktopFrame(
+                        router: widget.router,
+                        child: child ?? const SizedBox.shrink(),
+                      )
+                    : child ?? const SizedBox.shrink(),
+              ),
             ),
           ),
         );

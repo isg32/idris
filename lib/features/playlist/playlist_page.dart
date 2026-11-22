@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/icons/v_icons.dart';
+import '../../core/layout.dart';
 import '../../core/theme/v_text.dart';
 import '../../core/widgets/v_buttons.dart';
 import '../../core/widgets/v_controls.dart';
@@ -168,7 +169,8 @@ class PlaylistPage extends ConsumerWidget {
         const VFootnote('Long-press a track for more.'),
       ],
     );
-    if (!mini) return page;
+    // On a desktop the now-playing bar is the window's own.
+    if (!mini || desktopLayout) return page;
     return Stack(
       children: [
         VBottomInset(extra: miniPlayerHeight + 12, child: page),
