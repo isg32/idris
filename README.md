@@ -6,7 +6,7 @@
 
 **Your mantras and calm music, from your own YouTube playlists — and nothing else.**
 
-![Version](https://img.shields.io/badge/version-2.0.0-000000?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.1.0-000000?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/isg32/idris?style=flat-square&color=000000&label=release)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-000000?style=flat-square&logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android%20%C2%B7%20Linux-000000?style=flat-square&logo=android&logoColor=white)
@@ -215,6 +215,15 @@ adb shell settings put global nt_glyph_interface_debug_enable 1
 ### Installing a release
 
 Signed APKs are attached to every [release](https://github.com/isg32/idris/releases). For most phones, use `app-arm64-v8a-release.apk`. Everything Idris keeps stays on the phone.
+
+On Linux, download `Idris-x86_64.AppImage` from the same release, make it executable and run it:
+
+```sh
+chmod +x Idris-x86_64.AppImage
+./Idris-x86_64.AppImage
+```
+
+It carries its own NewPipe helper, Java runtime and libmpv, and uses the desktop's GTK, graphics and sound. To build it yourself: `linux/build_appimage.sh` (it downloads linuxdeploy once).
 
 ---
 

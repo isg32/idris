@@ -1,7 +1,8 @@
 name: Build and release
 
-# Builds signed APKs (one per ABI) on every push to main and publishes them
-# as a GitHub release tagged v<version>-<short sha>, with update.json, which
+# Builds signed APKs (one per ABI) and the Linux AppImage on every push to
+# main and publishes them as a GitHub release tagged v<version>-<short sha>,
+# with update.json, which
 # installed copies of Idris read to update themselves (lib/platform/updater.dart).
 # Bump the version in pubspec.yaml on every push: a release whose
 # versionCode isn't above the last one is refused.
@@ -24,7 +25,43 @@ permissions:
   contents: write
 
 jobs:
+  # The Linux app as one file (linux/build_appimage.sh): the Flutter build,
+  # the NewPipe helper with a trimmed Java runtime, and libmpv.
+  appimage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          cache: true
+
+      - name: Install the Linux build requirements
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config \
+            libgtk-3-dev libmpv-dev file
+
+      - run: flutter pub get
+
+      - name: Build the AppImage
+        run: linux/build_appimage.sh build/appimage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: build/appimage/Idris-x86_64.AppImage
+          if-no-files-found: error
+
   build-and-release:
+    needs: appimage
     runs-on: ubuntu-latest
     environment: deployment
     steps:
@@ -156,6 +193,11 @@ jobs:
         if: always()
         run: rm -f "$RUNNER_TEMP/release-key.jks"
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: appimage
+          path: build/appimage
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
@@ -168,9 +210,10 @@ jobs:
             **Commit:** ${{ steps.version.outputs.SHA }}
             **Message:** ${{ steps.version.outputs.MESSAGE }}
 
-            For most phones: `app-arm64-v8a-release.apk`.
+            For most phones: `app-arm64-v8a-release.apk`. On Linux: `Idris-x86_64.AppImage` (`chmod +x` it, then run it).
           files: |
             build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
             build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
             build/app/outputs/flutter-apk/app-x86_64-release.apk
             build/app/outputs/flutter-apk/update.json
+            build/appimage/Idris-x86_64.AppImage
