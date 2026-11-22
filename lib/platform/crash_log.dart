@@ -150,6 +150,16 @@ class CrashLog {
   /// Saves [log] to the phone's Downloads folder; returns where.
   Future<String> saveToDownloads(String log) async {
     final name = 'idris-log-${_stamp(DateTime.now())}.txt';
+    if (Platform.isLinux) {
+      // A desktop's Downloads folder is a plain folder.
+      final dir =
+          await getDownloadsDirectory() ??
+          Directory(p.join(Platform.environment['HOME'] ?? '.', 'Downloads'));
+      await dir.create(recursive: true);
+      final file = File(p.join(dir.path, name));
+      await file.writeAsString(log);
+      return file.path;
+    }
     final where = await _files.invokeMethod<String>('saveToDownloads', {
       'name': name,
       'text': log,

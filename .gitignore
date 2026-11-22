@@ -54,3 +54,8 @@ app.*.map.json
 *.jks
 *.keystore
 key.properties
+
+# The Linux YouTube extractor helper (linux/extractor): Gradle output.
+linux/extractor/build/
+linux/extractor/.gradle/
+linux/extractor/.kotlin/

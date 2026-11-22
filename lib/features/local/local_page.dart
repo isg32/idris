@@ -13,10 +13,11 @@ import '../../core/widgets/v_progress.dart';
 import '../../core/widgets/v_surface.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../../platform/local_music.dart';
 import '../common.dart';
 import '../player/mini_player.dart';
 
-const _source = 'On this phone';
+String get _source => localLabel;
 
 /// "On this phone": the songs in the folders the user chose, and the
 /// folders themselves.
@@ -145,7 +146,7 @@ class _LocalPageState extends ConsumerState<LocalPage> {
           ),
         const VFootnote(
           'Pull down to pick up new files. Removing a folder only takes it '
-          'out of Idris; the files stay on the phone.',
+          'out of Idris; the files stay where they are.',
         ),
       ],
     );

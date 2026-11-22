@@ -158,7 +158,10 @@ class CacheManager {
       final uri = await local?.uriOf(videoId);
       if (uri == null) throw StateError('$videoId is no longer on the phone');
       return OpenedAudio(
-        source: AudioSource.uri(Uri.parse(uri)),
+        // A path on Linux, a content:// URI on Android.
+        source: uri.startsWith('/')
+            ? AudioSource.file(uri)
+            : AudioSource.uri(Uri.parse(uri)),
         cached: true,
         kbps: 0,
       );

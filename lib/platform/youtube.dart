@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
+import 'desktop_extractor.dart';
 import 'net.dart';
 import 'playlist_scraper.dart';
 import 'quality.dart';
@@ -185,12 +187,16 @@ AudioResolver _explode(YoutubeApiClient client) => (id, quality) async {
   }
 };
 
-/// NewPipe's extractor, on the Android side (`YouTubeChannel.kt`).
+/// NewPipe's extractor: on Android in the app (`YouTubeChannel.kt`), on
+/// Linux in a Java helper beside it (`DesktopExtractor`).
 Future<ResolvedAudio> _newPipeAudio(String id, AudioQuality quality) async {
-  final m = await _newPipe.invokeMapMethod<String, Object?>('audio', {
-    'link': 'https://www.youtube.com/watch?v=$id',
-    'quality': quality.name,
-  });
+  final link = 'https://www.youtube.com/watch?v=$id';
+  final m = Platform.isLinux
+      ? await DesktopExtractor.instance.audio(link, quality.name)
+      : await _newPipe.invokeMapMethod<String, Object?>('audio', {
+          'link': link,
+          'quality': quality.name,
+        });
   final url = m?['url'] as String?;
   if (url == null) throw StateError('NewPipe found no audio');
   return ResolvedAudio(

@@ -323,7 +323,7 @@ String cacheWords(TrackCacheState s, double? progress) => switch (s) {
   TrackCacheState.cached => 'Cached',
   TrackCacheState.caching => 'Caching · ${((progress ?? 0) * 100).round()}%',
   TrackCacheState.streams => 'Streams',
-  TrackCacheState.local => 'On this phone',
+  TrackCacheState.local => localLabel,
 };
 
 /// A track in a list: number (or playing marker), title, state, length.
@@ -437,7 +437,7 @@ Future<void> showTrackActions(
       !pinned &&
       (ref.read(pinnedIdsProvider).value?.contains(track.videoId) ?? false);
   final facts = [
-    if (local) 'On this phone' else 'Track',
+    if (local) localLabel else 'Track',
     if (entry?.complete == true) 'Cached',
     if (entry != null && entry.kbps > 0) '${entry.kbps} kbps',
     if (entry?.complete == true) formatBytes(entry!.bytes),

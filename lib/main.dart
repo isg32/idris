@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 
 import 'app/app.dart';
 import 'app/router.dart';
@@ -27,10 +29,15 @@ Future<void> main() async {
     ..install();
   ErrorWidget.builder = quietErrorWidget;
   _registerFontLicences();
+  // On Linux, just_audio plays through libmpv (media_kit).
+  if (Platform.isLinux) JustAudioMediaKit.ensureInitialized(linux: true);
   unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
 
   final library = Library(AppDatabase());
-  final local = LocalMusic(library, ChannelLocalMusic());
+  final local = LocalMusic(
+    library,
+    Platform.isLinux ? DiskLocalMusic() : ChannelLocalMusic(),
+  );
   final cache = CacheManager(library, local: local);
   final covers = Covers();
   // Covers of playlists and tracks that are gone.

@@ -1,8 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
 
 import '../data/db/database.dart';
 import '../data/library.dart';
@@ -13,6 +18,11 @@ import '../data/library.dart';
 const localPrefix = 'local:';
 
 bool isLocal(String videoId) => videoId.startsWith(localPrefix);
+
+/// What the local list is called: "On this phone", or on a PC "On this
+/// computer".
+String get localLabel =>
+    Platform.isLinux ? 'On this computer' : 'On this phone';
 
 /// The ID for the file at [uri]: stable, so plays and covers stay with it.
 String localId(String uri) =>
@@ -119,6 +129,95 @@ class ChannelLocalMusic implements LocalMusicPlatform {
   @override
   Future<void> forget(String folderUri) =>
       _channel.invokeMethod<void>('forget', {'uri': folderUri});
+}
+
+/// [LocalMusicPlatform] on Linux: a folder dialog, the files read straight
+/// from disk, and tags read in Dart (audio_metadata_reader). A "URI" here
+/// is the file's path.
+class DiskLocalMusic implements LocalMusicPlatform {
+  static const _audio = {
+    '.mp3', '.m4a', '.aac', '.flac', '.ogg', '.oga', '.opus', '.wav', //
+    '.wma', '.alac', '.aiff', '.aif', '.mka', '.webm',
+  };
+
+  @override
+  Future<PickedFolder?> pickFolder() async {
+    final path = await FilePicker.getDirectoryPath(
+      dialogTitle: 'Choose a folder of music',
+    );
+    if (path == null) return null;
+    return PickedFolder(path, p.basename(path));
+  }
+
+  @override
+  Future<List<FoundFile>> list(String folderUri) async {
+    final out = <FoundFile>[];
+    await for (final e in Directory(
+      folderUri,
+    ).list(recursive: true, followLinks: false)) {
+      if (e is! File) continue;
+      final name = p.basename(e.path);
+      // Hidden files and folders (".thumbnails") hold no music.
+      if (p
+          .split(p.relative(e.path, from: folderUri))
+          .any((part) => part.startsWith('.'))) {
+        continue;
+      }
+      if (!_audio.contains(p.extension(name).toLowerCase())) continue;
+      final stat = await e.stat();
+      out.add(
+        FoundFile(
+          uri: e.path,
+          name: name,
+          bytes: stat.size,
+          modifiedMs: stat.modified.millisecondsSinceEpoch,
+        ),
+      );
+    }
+    return out;
+  }
+
+  @override
+  Future<List<FileTags>> tags(List<String> uris) => compute(_readTags, uris);
+
+  @override
+  Future<bool> art(String uri, String outPath) async {
+    final bytes = await compute(_readArt, uri);
+    if (bytes == null) return false;
+    final tmp = File('$outPath.part');
+    await tmp.writeAsBytes(bytes);
+    await tmp.rename(outPath);
+    return true;
+  }
+
+  @override
+  Future<void> forget(String folderUri) async {}
+}
+
+List<FileTags> _readTags(List<String> paths) => [
+  for (final path in paths) _tagsOf(path),
+];
+
+FileTags _tagsOf(String path) {
+  try {
+    final m = readMetadata(File(path));
+    return FileTags(
+      title: m.title ?? '',
+      artist: m.artist ?? '',
+      durationMs: m.duration?.inMilliseconds ?? 0,
+    );
+  } on Object {
+    return const FileTags(); // unreadable tags: the file name stands in
+  }
+}
+
+Uint8List? _readArt(String path) {
+  try {
+    final pictures = readMetadata(File(path), getImage: true).pictures;
+    return pictures.isEmpty ? null : pictures.first.bytes;
+  } on Object {
+    return null;
+  }
 }
 
 /// "On this phone": the folders the user chose and the music in them.

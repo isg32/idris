@@ -68,7 +68,7 @@ class HomePage extends ConsumerWidget {
                   track: p.track,
                   subtitle: [
                     if (isLocal(p.track.videoId))
-                      'On this phone'
+                      localLabel
                     else if (p.playlistTitle.isNotEmpty)
                       p.playlistTitle,
                     'played ${when(p.at)}',
@@ -112,7 +112,7 @@ Future<void> _playFromPlaylist(
     ref,
     i < 0 ? [item.track] : tracks,
     index: i < 0 ? 0 : i,
-    source: local ? 'On this phone' : item.playlistTitle,
+    source: local ? localLabel : item.playlistTitle,
   );
 }
 
