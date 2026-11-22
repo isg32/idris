@@ -244,7 +244,11 @@ void main() {
 
   test('checks by itself at most every 6 hours', () async {
     await up().start();
-    await pumpEventQueue();
+    // start() checks in the background: wait until that check is done
+    // (one pass of the event queue isn't enough on a busy machine).
+    for (var i = 0; i < 200 && state() is! UpdateAvailable; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
     expect(github.manifestHits, 1);
 
     now = now.add(const Duration(hours: 1));
