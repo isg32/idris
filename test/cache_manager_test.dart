@@ -11,6 +11,9 @@ import 'package:idris/platform/cache_manager.dart';
 import 'package:idris/platform/quality.dart';
 import 'package:idris/platform/youtube.dart';
 
+/// Bytes the server sent, by path.
+final Map<String, int> served = {};
+
 /// A slow range-only server: each request waits a little, so a download is
 /// still running when the next track opens.
 Future<HttpServer> _serve(Uint8List data) async {
@@ -23,6 +26,11 @@ Future<HttpServer> _serve(Uint8List data) async {
         ? data.length - 1
         : int.parse(m.group(2)!).clamp(0, data.length - 1);
     await Future<void>.delayed(const Duration(milliseconds: 150));
+    served.update(
+      req.uri.path,
+      (n) => n + end - start + 1,
+      ifAbsent: () => end - start + 1,
+    );
     req.response
       ..statusCode = HttpStatus.partialContent
       ..headers.set(
@@ -44,6 +52,7 @@ void main() {
   final data = Uint8List.fromList(List.generate(4 << 20, (i) => i % 251));
 
   setUp(() async {
+    served.clear();
     tmp = Directory.systemTemp.createTempSync('idris_cm_');
     server = await _serve(data);
     db = AppDatabase(NativeDatabase.memory());
@@ -97,5 +106,42 @@ void main() {
     await Future<void>.delayed(const Duration(seconds: 2));
     expect((await Library(db).cacheEntry('a'))!.complete, isTrue);
     expect(File('${tmp.path}/a.m4a').lengthSync(), data.length);
+  });
+
+  test('pre-caching a pinned playlist downloads each track once', () async {
+    final library = Library(db);
+    final id = await library.importPlaylist(
+      YtPlaylist(
+        id: 'PLpin',
+        title: 'Pinned',
+        channel: 'Me',
+        videos: [
+          for (final v in ['a', 'b', 'c'])
+            YtVideo(
+              id: v,
+              title: v,
+              channel: '',
+              duration: const Duration(minutes: 3),
+            ),
+        ],
+      ),
+    );
+    await library.setPlaylistPinned(id, true);
+    cache.kick();
+
+    // Until every track is complete, then a while longer: a worker that
+    // didn't see the last one finish would fetch it again and again.
+    for (var i = 0; i < 100; i++) {
+      final done = (await library.cacheEntries()).where((e) => e.complete);
+      if (done.length == 3) break;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    await Future<void>.delayed(const Duration(seconds: 2));
+
+    for (final v in ['a', 'b', 'c']) {
+      expect((await library.cacheEntry(v))!.complete, isTrue, reason: v);
+      // The whole file once, plus the one-byte length probe.
+      expect(served['/$v'], data.length + 1, reason: v);
+    }
   });
 }

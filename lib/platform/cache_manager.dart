@@ -66,6 +66,11 @@ class CacheManager {
   /// Downloads running now, by video ID.
   final Map<String, CacheDownload> _active = {};
 
+  /// Each download's end: its file renamed and its entry marked complete
+  /// (or its failure handled). Waiting on this, not the download, is what
+  /// keeps the worker from seeing a finished track as still to do.
+  final Expando<Future<void>> _settled = Expando();
+
   /// Download progress (0–1) of tracks being cached, for the rows.
   final ValueNotifier<Map<String, double>> progress = ValueNotifier(const {});
 
@@ -243,13 +248,11 @@ class CacheManager {
       ),
     );
     download.start();
-    unawaited(
-      download.done.then(
-        (_) => _finish(videoId, download, path),
-        onError: (Object _) {
-          if (identical(_active[videoId], download)) _active.remove(videoId);
-        },
-      ),
+    _settled[download] = download.done.then(
+      (_) => _finish(videoId, download, path),
+      onError: (Object _) {
+        if (identical(_active[videoId], download)) _active.remove(videoId);
+      },
     );
     return download;
   }
@@ -367,11 +370,15 @@ class CacheManager {
           try {
             if (running != null && running.error == null) {
               await running.done;
+              await _settled[running];
             } else {
               final s = await library.settings();
               final (audio, _, total) = await _resolveWorking(id, s.quality, 0);
               final d = await _begin(id, audio, total: total);
               await d.done;
+              // And until it's marked complete, or the next look at the
+              // cache would fetch it again.
+              await _settled[d];
             }
           } on Object catch (e) {
             debugPrint('Pre-caching $id failed: $e');
