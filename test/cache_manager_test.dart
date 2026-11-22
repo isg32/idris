@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:idris/data/db/database.dart';
@@ -142,6 +143,49 @@ void main() {
       expect((await library.cacheEntry(v))!.complete, isTrue, reason: v);
       // The whole file once, plus the one-byte length probe.
       expect(served['/$v'], data.length + 1, reason: v);
+    }
+  });
+
+  test('removing a playlist\'s downloads keeps what else needs them', () async {
+    final library = Library(db);
+    YtPlaylist list(String id, List<String> ids) => YtPlaylist(
+      id: id,
+      title: id,
+      channel: '',
+      videos: [
+        for (final v in ids)
+          YtVideo(id: v, title: v, channel: '', duration: Duration.zero),
+      ],
+    );
+    final mine = await library.importPlaylist(
+      list('PLmine', ['a', 'b', 'c', 'd']),
+    );
+    final other = await library.importPlaylist(list('PLother', ['b']));
+    await library.setPlaylistPinned(other, true); // keeps b
+    await library.setTrackPinned('c', true); // pinned on its own
+    for (final v in ['a', 'b', 'c', 'd']) {
+      final f = File('${tmp.path}/$v.m4a')..writeAsBytesSync([1, 2, 3]);
+      await library.putCache(
+        CacheEntriesCompanion.insert(
+          videoId: v,
+          path: f.path,
+          bytes: const Value(3),
+          complete: const Value(true),
+          cachedAt: DateTime(2026),
+        ),
+      );
+    }
+    cache.playingId = 'd'; // playing now
+
+    final freed = await cache.removeAll(
+      (await library.playlistTracks(mine)).map((t) => t.videoId),
+    );
+
+    expect(freed, 3);
+    expect(await library.cacheEntry('a'), isNull);
+    expect(File('${tmp.path}/a.m4a').existsSync(), isFalse);
+    for (final kept in ['b', 'c', 'd']) {
+      expect(await library.cacheEntry(kept), isNotNull, reason: kept);
     }
   });
 }

@@ -234,6 +234,15 @@ Future<void> showPlaylistActions(
             chevron: false,
             onTap: () => done(() => _rename(context, ref, s)),
           ),
+          if (s.cachedCount > 0)
+            VListRow(
+              leading: const VIconView(VIcon.trash),
+              title: 'Remove downloads',
+              subtitle: '${s.cachedCount} cached on this phone',
+              chevron: false,
+              onTap: () =>
+                  done(() => confirmRemoveDownloads(context, ref, s.playlist)),
+            ),
           VListRow(
             leading: const VIconView(VIcon.trash),
             title: 'Remove from Idris',

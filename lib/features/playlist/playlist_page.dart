@@ -132,6 +132,14 @@ class PlaylistPage extends ConsumerWidget {
                 const SizedBox(height: 10),
                 VBar(value: cached / tracks.length),
               ],
+              if (cached > 0) ...[
+                const SizedBox(height: 12),
+                VButton.ghost(
+                  'Remove downloads',
+                  onPressed: () =>
+                      confirmRemoveDownloads(context, ref, playlist),
+                ),
+              ],
             ],
           ),
         ),

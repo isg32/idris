@@ -6,7 +6,7 @@
 
 **Your mantras and calm music, from your own YouTube playlists — and nothing else.**
 
-![Version](https://img.shields.io/badge/version-1.3.1-000000?style=flat-square)
+![Version](https://img.shields.io/badge/version-1.4.0-000000?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/isg32/idris?style=flat-square&color=000000&label=release)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-000000?style=flat-square&logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android-000000?style=flat-square&logo=android&logoColor=white)
@@ -49,7 +49,7 @@ Idris is a personal, sideloaded app, not distributed through the Play Store.
 | **Mini player** | Docked above the tab bar and on playlist pages, as in Spotify and Apple Music. |
 | **Media controls** | Background playback with the notification, lock screen, quick-settings player and headset buttons. |
 | **Quality** | Best (default), High (~160 kbps), Medium (~128 kbps) or Low. |
-| **Cache** | Every played track is kept. *Pin offline* (a playlist or a track) downloads ahead, on Wi-Fi by default, and is never removed. Unpinned audio past the limit (1, 2, 5 or 10 GB, or none) goes least recently played first. |
+| **Cache** | Every played track is kept. *Pin offline* (a playlist or a track) downloads ahead, on Wi-Fi by default, and is never removed. Unpinned audio past the limit (1, 2, 5 or 10 GB, or none) goes least recently played first. To free space yourself: *Remove from cache* on a track, *Remove downloads* on a playlist (which also stops keeping it offline), or *Clear auto cache* in Settings. |
 | **Covers** | Every track shows its YouTube picture, cropped square, in lists, on Home and in the mini player, and blurred behind the player (Settings › Artwork, on by default). A playlist's cover is a mosaic of its first four tracks. Long-press a track or playlist (or tap a playlist's cover) to choose a picture from the phone instead; it's copied into Idris. All saved on the phone, so they show offline. |
 | **Crash reports** | An unexpected error shows a calm popup with the log, *Copy log* and *Save to Downloads*. A crash on the Android side is shown on the next launch. |
 | **Updates** | Idris updates itself from GitHub Releases: it checks at launch and every 6 hours (or from *Settings › Check for updates*), shows a card on Home and in Settings, downloads with progress (resuming after a drop), checks the size, SHA-256 and signer, and installs through Android's PackageInstaller. After the first update, Android installs the next ones without its confirm screen. *What's new* shows once afterwards. |

@@ -423,6 +423,25 @@ class CacheManager {
     _publishProgress();
   }
 
+  /// Deletes the audio of [videoIds] (a playlist's "Remove downloads"),
+  /// except what is still pinned (on its own or by another playlist) and
+  /// the track playing now. Unpin the playlist first, or its tracks count
+  /// as pinned. Returns the bytes freed.
+  Future<int> removeAll(Iterable<String> videoIds) async {
+    final pinned = await library.pinnedVideoIds();
+    final entries = {
+      for (final e in await library.cacheEntries()) e.videoId: e,
+    };
+    var freed = 0;
+    for (final id in videoIds) {
+      final e = entries[id];
+      if (e == null || pinned.contains(id) || id == playingId) continue;
+      freed += e.bytes;
+      await remove(id);
+    }
+    return freed;
+  }
+
   /// Deletes all unpinned audio (Settings → Clear auto cache).
   Future<void> clearAuto() async {
     final pinned = await library.pinnedVideoIds();

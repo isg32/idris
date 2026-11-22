@@ -225,6 +225,57 @@ Future<void> resetPlaylistCover(WidgetRef ref, Playlist playlist) async {
   _deleteQuietly(playlist.coverPath);
 }
 
+/// A playlist's "Remove downloads": stops keeping it offline and deletes
+/// its cached tracks (not ones pinned on their own, kept by another offline
+/// playlist, or playing now), after asking.
+Future<void> confirmRemoveDownloads(
+  BuildContext context,
+  WidgetRef ref,
+  Playlist playlist,
+) async {
+  final library = ref.read(libraryProvider);
+  final tracks = await library.playlistTracks(playlist.id);
+  final entries = ref.read(cacheEntriesProvider).value ?? const {};
+  final bytes = tracks.fold<int>(
+    0,
+    (sum, t) => sum + (entries[t.videoId]?.bytes ?? 0),
+  );
+  if (!context.mounted) return;
+  await showVSheet<void>(
+    context,
+    title: 'Remove downloads',
+    builder: (sheet) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Deletes up to ${formatBytes(bytes)} of "${playlist.title}" from '
+          'this phone${playlist.pinned ? ' and stops keeping it offline' : ''}. '
+          'Tracks pinned on their own or kept by another offline playlist '
+          'stay. Anything removed streams (and caches) again next time.',
+          style: VText.inter(14, height: 1.45),
+        ),
+        const SizedBox(height: 18),
+        VButton.primary(
+          'Remove',
+          onPressed: () {
+            Navigator.of(sheet).pop();
+            unawaited(() async {
+              if (playlist.pinned) {
+                await library.setPlaylistPinned(playlist.id, false);
+              }
+              await ref
+                  .read(cacheManagerProvider)
+                  .removeAll(tracks.map((t) => t.videoId));
+            }());
+          },
+        ),
+        const SizedBox(height: 10),
+        VButton.secondary('Keep', onPressed: () => Navigator.of(sheet).pop()),
+      ],
+    ),
+  );
+}
+
 /// The small glyph at the end of a track row.
 class CacheGlyph extends ConsumerWidget {
   const CacheGlyph(this.videoId, {super.key});
@@ -378,6 +429,9 @@ Future<void> showTrackActions(
 }) {
   final entry = ref.read(cacheEntriesProvider).value?[track.videoId];
   final pinned = track.pinned;
+  final keptByPlaylist =
+      !pinned &&
+      (ref.read(pinnedIdsProvider).value?.contains(track.videoId) ?? false);
   final facts = [
     'Track',
     if (entry?.complete == true) 'Cached',
@@ -431,6 +485,10 @@ Future<void> showTrackActions(
                 VListRow(
                   leading: const VIconView(VIcon.trash),
                   title: 'Remove from cache',
+                  // Pinned by its playlist: the worker fetches it again.
+                  subtitle: keptByPlaylist
+                      ? 'Comes back: its playlist is kept offline'
+                      : null,
                   chevron: false,
                   onTap: () => done(() async {
                     if (pinned) {
