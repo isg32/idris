@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:audio_service_mpris/audio_service_mpris.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 
 import 'app/app.dart';
@@ -31,7 +32,21 @@ Future<void> main() async {
   ErrorWidget.builder = quietErrorWidget;
   _registerFontLicences();
   // On Linux, just_audio plays through libmpv (media_kit).
-  if (Platform.isLinux) JustAudioMediaKit.ensureInitialized(linux: true);
+  if (Platform.isLinux) {
+    JustAudioMediaKit.ensureInitialized(linux: true);
+    // Media controls on Linux: MPRIS on the session bus, which media keys,
+    // playerctl and desktop media widgets talk to.
+    AudioServiceMpris.init(
+      dBusName: 'idris',
+      identity: 'Idris',
+      desktopEntry: 'com.isg32.idris',
+      canControl: true,
+      canPlay: true,
+      canPause: true,
+      canGoNext: true,
+      canGoPrevious: true,
+    );
+  }
   unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
 
   final library = Library(AppDatabase());

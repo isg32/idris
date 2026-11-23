@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
@@ -154,6 +155,8 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
   /// ([stepMediaVolume]), a hold skips ([VolumeKeys]). Otherwise the keys
   /// work as they always do.
   void _volumeMode() {
+    // Android's media session only: MPRIS (Linux) has no volume keys.
+    if (!Platform.isAndroid) return;
     final remote = _volumeSkip && player.playing;
     if (remote == _remoteVolume) return;
     _remoteVolume = remote;
@@ -557,14 +560,18 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
   );
 }
 
-/// Starts the media service (Android only) and returns its handler; other
-/// platforms and tests get a plain handler.
+/// Starts the media service (Android's, or MPRIS on Linux) and returns its
+/// handler; other platforms and tests get a plain handler.
 Future<IdrisAudioHandler> initAudio({
   required Library library,
   required CacheManager cache,
 }) async {
   IdrisAudioHandler make() => IdrisAudioHandler(library: library, cache: cache);
-  if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return make();
+  final service =
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.linux);
+  if (!service) return make();
   try {
     return await AudioService.init(
       builder: make,
