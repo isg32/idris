@@ -35,7 +35,7 @@ echo "== NewPipe helper"
 
 echo "== AppDir"
 rm -rf "$APPDIR"
-mkdir -p "$APP" "$APPDIR/usr/share/applications" "$APPDIR/usr/share/icons/hicolor/256x256/apps"
+mkdir -p "$APP" "$APPDIR/usr/share/applications" "$APPDIR/usr/share/icons/hicolor/192x192/apps"
 cp -r build/linux/x64/release/bundle/. "$APP/"
 HELPER="$APPDIR/extractor"
 mkdir -p "$HELPER"
@@ -60,7 +60,8 @@ Categories=AudioVideo;Audio;Player;
 StartupWMClass=com.isg32.idris
 Terminal=false
 EOF
-cp assets/icon/icon.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/idris.png"
+# A standard icon size (linuxdeploy refuses others): the launcher's 192 px.
+cp android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png "$APPDIR/usr/share/icons/hicolor/192x192/apps/idris.png"
 
 cat > "$APPDIR/AppRun" <<'EOF'
 #!/bin/sh
@@ -110,7 +111,7 @@ rm -f "$OUT"/Idris*.AppImage
       --executable "$APP/idris" \
       --library "$LIBMPV" \
       --desktop-file "$APPDIR/usr/share/applications/idris.desktop" \
-      --icon-file "$APPDIR/usr/share/icons/hicolor/256x256/apps/idris.png" \
+      --icon-file "$APPDIR/usr/share/icons/hicolor/192x192/apps/idris.png" \
       --custom-apprun "$APPDIR/AppRun" \
       "${EXCLUDE[@]}" \
       --output appimage
