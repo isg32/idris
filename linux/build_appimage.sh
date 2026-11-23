@@ -63,7 +63,9 @@ EOF
 # A standard icon size (linuxdeploy refuses others): the launcher's 192 px.
 cp android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png "$APPDIR/usr/share/icons/hicolor/192x192/apps/idris.png"
 
-cat > "$APPDIR/AppRun" <<'EOF'
+# Written beside the AppDir: linuxdeploy copies it in (it can't copy a
+# file onto itself).
+cat > "$OUT/AppRun" <<'EOF'
 #!/bin/sh
 # Idris's AppImage entry point: its own libraries first, then the app.
 # APPDIR tells the app where the NewPipe helper is ($APPDIR/extractor).
@@ -72,7 +74,7 @@ export APPDIR="${APPDIR:-$HERE}"
 export LD_LIBRARY_PATH="$HERE/usr/lib:$HERE/usr/lib/idris/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 exec "$HERE/usr/lib/idris/idris" "$@"
 EOF
-chmod +x "$APPDIR/AppRun"
+chmod +x "$OUT/AppRun"
 
 echo "== linuxdeploy"
 mkdir -p "$TOOLS"
@@ -112,7 +114,7 @@ rm -f "$OUT"/Idris*.AppImage
       --library "$LIBMPV" \
       --desktop-file "$APPDIR/usr/share/applications/idris.desktop" \
       --icon-file "$APPDIR/usr/share/icons/hicolor/192x192/apps/idris.png" \
-      --custom-apprun "$APPDIR/AppRun" \
+      --custom-apprun "$OUT/AppRun" \
       "${EXCLUDE[@]}" \
       --output appimage
 )
