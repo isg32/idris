@@ -147,6 +147,8 @@ Checked by tests on every run:
 | `lib/core/layout.dart`, `lib/app/desktop.dart` | the three layouts by window size; the tablet and desktop frame (sidebar or rail, now-playing bar) |
 | `lib/platform/desktop_extractor.dart`, `linux/extractor/` | NewPipe on Linux: the Java helper and how Idris talks to it |
 | `linux/` | the Linux desktop runner |
+| `linux/build_appimage.sh` | builds `Idris-x86_64.AppImage` (by hand and in CI) |
+| `lib/platform/appimage_updater.dart` | the AppImage replacing itself in place, and restarting |
 | `tool/live_playlist_test.dart` | a by-hand check against real YouTube playlists |
 
 ---
@@ -217,14 +219,55 @@ adb shell settings put global nt_glyph_interface_debug_enable 1
 
 Signed APKs are attached to every [release](https://github.com/isg32/idris/releases). For most phones, use `app-arm64-v8a-release.apk`. Everything Idris keeps stays on the phone.
 
-On Linux, download `Idris-x86_64.AppImage` from the same release, make it executable and run it:
+On Linux, use `Idris-x86_64.AppImage` from the same release: see [Linux (AppImage)](#linux-appimage).
+
+### Linux (AppImage)
+
+One file, for any recent x86-64 desktop Linux. It carries its own NewPipe helper (with a Java runtime trimmed to what it needs) and libmpv, and uses the desktop's own GTK, graphics and sound.
+
+**Install.** Put it somewhere it can stay and you can write to, since it updates itself in place:
 
 ```sh
-chmod +x Idris-x86_64.AppImage
-./Idris-x86_64.AppImage
+mkdir -p ~/Applications
+mv ~/Downloads/Idris-x86_64.AppImage ~/Applications/
+chmod +x ~/Applications/Idris-x86_64.AppImage
+~/Applications/Idris-x86_64.AppImage
 ```
 
-It carries its own NewPipe helper, Java runtime and libmpv, and uses the desktop's GTK, graphics and sound. To build it yourself: `linux/build_appimage.sh` (it downloads linuxdeploy once).
+It needs a desktop with GTK 3 and a sound server (PipeWire or PulseAudio), as any recent GNOME, KDE, Hyprland or Sway setup has. If it won't start because of FUSE, install `fuse2` (Arch) or `libfuse2` (Debian/Ubuntu), or run it with `--appimage-extract-and-run`.
+
+**Add it to the app menu.** The AppImage doesn't install a launcher itself. To get one:
+
+```sh
+~/Applications/Idris-x86_64.AppImage --appimage-extract idris.png >/dev/null
+mkdir -p ~/.local/share/icons ~/.local/share/applications
+mv squashfs-root/idris.png ~/.local/share/icons/idris.png && rm -rf squashfs-root
+cat > ~/.local/share/applications/idris.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=Idris
+Exec=$HOME/Applications/Idris-x86_64.AppImage
+Icon=$HOME/.local/share/icons/idris.png
+Categories=AudioVideo;Audio;Player;
+StartupWMClass=com.isg32.idris
+EOF
+```
+
+**Updates** come from the same releases as the phone's (see [Over-the-air updates](#over-the-air-updates)): a card on Home and Settings › Check for updates, then **Update**, then **Restart Idris**. The file is replaced where it is, so the launcher above keeps working.
+
+**Where things are.** The library, cached audio, covers and the updater's notes live in `~/.local/share/com.isg32.idris/`. A crash log saved from the crash popup goes to `~/Downloads`. Remove that folder and the AppImage (and the launcher, if you made one) to uninstall.
+
+**Build it yourself** with `linux/build_appimage.sh [output dir]`, which is what CI runs. It needs the Linux build requirements above, JDK 17 (for jlink) and libmpv (`libmpv-dev` on Debian/Ubuntu), and downloads linuxdeploy once into `build/appimage-tools`. Its launcher looks in the system's libraries first and falls back to the bundled ones, so the desktop's GTK always gets its own (a bundled older library had broken GTK on Arch).
+
+**Try an update locally.** Build an older Idris that asks a local server, run it as if it were the installed AppImage, and serve a newer AppImage with an `update.json` (its `linux-x86_64` entry: the AppImage's URL, size, SHA-256, and its build number as `versionCode`):
+
+```sh
+# with kAppBuild and pubspec's +N lowered, so there's something newer
+flutter build linux --release --dart-define=IDRIS_UPDATE_URL=http://127.0.0.1:8765/update.json
+APPIMAGE=/path/to/an/old/Idris-x86_64.AppImage build/linux/x64/release/bundle/idris
+```
+
+The server must answer Range requests (Python's `http.server` doesn't). After **Restart Idris**, the file at `APPIMAGE` is the newer AppImage, running.
 
 ---
 
