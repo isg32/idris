@@ -67,11 +67,16 @@ cp android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png "$APPDIR/usr/share/ic
 # file onto itself).
 cat > "$OUT/AppRun" <<'EOF'
 #!/bin/sh
-# Idris's AppImage entry point: its own libraries first, then the app.
-# APPDIR tells the app where the NewPipe helper is ($APPDIR/extractor).
+# Idris's AppImage entry point. The system's libraries come first and the
+# bundled ones are the fallback: the desktop's GTK must load its own
+# helpers (a newer system gdk-pixbuf breaks on an older bundled glycin),
+# and libmpv and what it needs come from the AppImage only where the
+# system has none. The app finds its own Flutter libraries by its RUNPATH.
+# APPDIR tells it where the NewPipe helper is ($APPDIR/extractor).
 HERE="$(dirname "$(readlink -f "$0")")"
 export APPDIR="${APPDIR:-$HERE}"
-export LD_LIBRARY_PATH="$HERE/usr/lib:$HERE/usr/lib/idris/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+SYSTEM=/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu:/usr/lib64:/lib64:/usr/lib:/lib
+export LD_LIBRARY_PATH="$SYSTEM:$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 exec "$HERE/usr/lib/idris/idris" "$@"
 EOF
 chmod +x "$OUT/AppRun"
@@ -93,6 +98,7 @@ if [ -z "$LIBMPV" ]; then
 fi
 
 # What every desktop Linux has, and what must match the running system.
+# Only the core X libraries: rarer ones (libXRes) are bundled as fallbacks.
 EXCLUDE=()
 for lib in 'libgtk-3.so*' 'libgdk-3.so*' 'libglib-2.0.so*' 'libgobject-2.0.so*' \
            'libgio-2.0.so*' 'libgmodule-2.0.so*' 'libpango*.so*' 'libcairo*.so*' \
@@ -100,7 +106,10 @@ for lib in 'libgtk-3.so*' 'libgdk-3.so*' 'libglib-2.0.so*' 'libgobject-2.0.so*' 
            'libxkbcommon*.so*' 'libharfbuzz*.so*' 'libfreetype.so*' 'libfontconfig.so*' \
            'libpulse*.so*' 'libasound.so*' 'libpipewire*.so*' 'libjack.so*' \
            'libva*.so*' 'libvdpau.so*' 'libdrm*.so*' 'libvulkan.so*' 'libEGL*.so*' \
-           'libGL*.so*' 'libgbm.so*' 'libX*.so*' 'libxcb*.so*' 'libdbus-1.so*' \
+           'libGL*.so*' 'libgbm.so*' 'libxcb*.so*' 'libdbus-1.so*' \
+           'libX11.so*' 'libXext.so*' 'libXrender.so*' 'libXi.so*' 'libXfixes.so*' \
+           'libXcursor.so*' 'libXrandr.so*' 'libXinerama.so*' 'libXcomposite.so*' \
+           'libXdamage.so*' 'libXau.so*' 'libXdmcp.so*' \
            'libsystemd.so*' 'libudev.so*'; do
   EXCLUDE+=(--exclude-library "$lib")
 done
