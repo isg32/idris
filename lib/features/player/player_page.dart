@@ -270,6 +270,89 @@ class PlayerPage extends ConsumerWidget {
       ),
     ];
 
+    // A phone on its side: two halves, the controls on the left and the
+    // lyrics (or the cover) on the right, as shares of the screen. The
+    // left half is laid out at a usable height and scaled down as a whole
+    // if the screen is shorter, so nothing is cut off.
+    final screen = MediaQuery.sizeOf(context);
+    if (VLayout.sideways(context)) {
+      final sides = MediaQuery.paddingOf(context);
+      return Padding(
+        padding: EdgeInsets.fromLTRB(
+          sides.left + screen.width * 0.03,
+          top + 8,
+          sides.right + screen.width * 0.03,
+          bottom + 12,
+        ),
+        child: LayoutBuilder(
+          builder: (context, c) {
+            final half = c.maxWidth * 0.47;
+            final controls = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ...header,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(eyebrow, style: VText.eyebrow),
+                    const SizedBox(height: 6),
+                    Text(
+                      t.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: VText.inter(20, weight: 400),
+                    ),
+                    const SizedBox(height: 12),
+                    // The progress bar and its line, without the big clock.
+                    ...time.skip(2),
+                  ],
+                ),
+                ...transport,
+                ...modes,
+              ],
+            );
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: half,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.topLeft,
+                    child: SizedBox(
+                      width: half,
+                      height: c.maxHeight < 340 ? 340 : c.maxHeight,
+                      child: controls,
+                    ),
+                  ),
+                ),
+                SizedBox(width: c.maxWidth * 0.06),
+                Expanded(
+                  child: showLyrics
+                      ? LyricsView(t.videoId, edgeBlur: true)
+                      : LayoutBuilder(
+                          builder: (context, cover) {
+                            final side = cover.maxHeight < cover.maxWidth
+                                ? cover.maxHeight
+                                : cover.maxWidth;
+                            return Center(
+                              child: TrackArt(
+                                t.videoId,
+                                size: side,
+                                radius: side * 0.06,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
     // A tablet or desktop window: the cover on top, on the left, and the
     // track, time and controls under it. Every size is a share of the
     // player's space, worked out as the window changes; the cover takes

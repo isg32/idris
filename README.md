@@ -6,7 +6,7 @@
 
 **Your mantras and calm music, from your own YouTube playlists — and nothing else.**
 
-![Version](https://img.shields.io/badge/version-2.4.0-000000?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.4.1-000000?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/isg32/idris?style=flat-square&color=000000&label=release)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-000000?style=flat-square&logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android%20%C2%B7%20Linux-000000?style=flat-square&logo=android&logoColor=white)
@@ -57,7 +57,7 @@ Idris is a personal, sideloaded app, not distributed through the Play Store.
 | **Crash reports** | An unexpected error shows a calm popup with the log, *Copy log* and *Save to Downloads*. A crash on the Android side is shown on the next launch. |
 | **Updates** | Idris updates itself from GitHub Releases: it checks at launch and every 6 hours (or from *Settings › Check for updates*), shows a card on Home and in Settings, downloads with progress (resuming after a drop), checks the size, SHA-256 and signer, and installs through Android's PackageInstaller. After the first update, Android installs the next ones without its confirm screen. *What's new* shows once afterwards. |
 | **Linux** | The same app on a Linux desktop, from the same code: YouTube streams found by the same NewPipe extractor (a small Java helper), audio through libmpv, and "On this computer" for folders of music on disk. |
-| **Layouts** | Three, by window size: mobile (tab bar and mini player), tablet (a rail of sections) and desktop (a sidebar with the playlists, pages in columns, a now-playing bar). |
+| **Layouts** | Three, by window size: mobile (tab bar and mini player), tablet (a rail of sections, also a phone on its side, where the player puts its controls and the lyrics or cover side by side) and desktop (a sidebar with the playlists, pages in columns, a now-playing bar). |
 | **Glyph** | Optional, on Nothing phones: a slow breathing pulse on the strip while audio plays. |
 
 ### On a desktop

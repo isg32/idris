@@ -61,15 +61,17 @@ class _DesktopFrameState extends State<DesktopFrame> {
   @override
   Widget build(BuildContext context) {
     final ink = VInk.of(context);
-    final line = BorderSide(color: ink, width: VSpace.hairline);
+    final insets = MediaQuery.paddingOf(context);
     // A tablet gets a rail of section icons; a desktop, the full sidebar.
     final rail = VLayout.of(context) == VLayout.tablet;
     final width = MediaQuery.sizeOf(context).width;
+    final left = insets.left;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DecoratedBox(
-          decoration: BoxDecoration(border: Border(right: line)),
+        Padding(
+          // A phone on its side: clear of a camera cutout on the left.
+          padding: EdgeInsets.only(left: left),
           child: SizedBox(
             // Shares of the window: a slim rail, or a fifth for the sidebar.
             width: rail
@@ -78,12 +80,27 @@ class _DesktopFrameState extends State<DesktopFrame> {
             child: _Sidebar(router, rail: rail),
           ),
         ),
+        // The line between the rail and the page: within the screen's safe
+        // area, so it doesn't run through a phone's status bar or past its
+        // gesture bar (a desktop window has none: the full height).
+        Padding(
+          padding: EdgeInsets.only(top: insets.top, bottom: insets.bottom),
+          child: SizedBox(
+            width: VSpace.hairline,
+            child: ColoredBox(color: ink),
+          ),
+        ),
         Expanded(
-          child: Column(
-            children: [
-              Expanded(child: widget.child),
-              if (!_player) _NowPlayingBar(router),
-            ],
+          // The rail has taken the left inset; the pages start at the line.
+          child: MediaQuery.removePadding(
+            context: context,
+            removeLeft: true,
+            child: Column(
+              children: [
+                Expanded(child: widget.child),
+                if (!_player) _NowPlayingBar(router),
+              ],
+            ),
           ),
         ),
       ],

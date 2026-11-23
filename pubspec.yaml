@@ -1,7 +1,7 @@
 name: idris
 description: "Audio from your own YouTube playlists — mantras, chants and calm music — cached as you listen."
 publish_to: 'none'
-version: 2.4.0+19
+version: 2.4.1+20
 
 environment:
   sdk: ^3.13.7

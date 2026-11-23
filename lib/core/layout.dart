@@ -8,8 +8,9 @@ import 'package:flutter/widgets.dart';
 ///   bottom, and pages that use the width.
 /// - [desktop]: the sidebar with the playlists, and pages in columns.
 ///
-/// A phone on its side is wide but short: it stays [mobile], since a rail
-/// and a bottom bar would leave too little height.
+/// A phone on its side is wide but short: it gets the [tablet] frame, as
+/// the rail on the left and the bar at the bottom take far less height than
+/// the floating tab bar and mini player ([sideways] tells it apart).
 enum VLayout {
   mobile,
   tablet,
@@ -20,8 +21,17 @@ enum VLayout {
 
   static VLayout forSize(Size s) {
     if (s.width >= 1100 && s.height >= 560) return desktop;
-    if (s.width >= 640 && s.height >= 520) return tablet;
+    if (s.width >= 640 && (s.height >= 520 || s.width > s.height)) {
+      return tablet;
+    }
     return mobile;
+  }
+
+  /// Wide and too short for the tablet's pages as they are (a phone on its
+  /// side): the player puts its controls and lyrics side by side.
+  static bool sideways(BuildContext context) {
+    final s = MediaQuery.sizeOf(context);
+    return s.width > s.height && s.height < 520;
   }
 
   /// The tablet and desktop layouts: the frame around the pages
