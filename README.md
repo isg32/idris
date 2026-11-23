@@ -59,6 +59,31 @@ Idris is a personal, sideloaded app, not distributed through the Play Store.
 | **Layouts** | Three, by window size: mobile (tab bar and mini player), tablet (a rail of sections) and desktop (a sidebar with the playlists, pages in columns, a now-playing bar). |
 | **Glyph** | Optional, on Nothing phones: a slow breathing pulse on the strip while audio plays. |
 
+### On a desktop
+
+The Linux app, in its desktop layout (a window 1100 px and wider): the sidebar with the sections and your playlists, and pages in columns.
+
+<p align="center">
+  <img src="docs/screenshots/desktop-home.png" alt="Home on a desktop: Recently added down the left, Recently played and the playlists beside it" width="100%">
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/desktop-library.png" alt="Library on a desktop: On this computer and the playlists as a grid"></td>
+    <td width="50%"><img src="docs/screenshots/desktop-settings.png" alt="Settings on a desktop"></td>
+  </tr>
+</table>
+
+Narrower, the tablet layout: a rail of sections instead of the sidebar.
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/screenshots/tablet-home.png" alt="Home in the tablet layout"></td>
+    <td width="33%"><img src="docs/screenshots/tablet-on-this-computer.png" alt="On this computer: music from a folder on disk, with covers from the files"></td>
+    <td width="33%"><img src="docs/screenshots/tablet-about.png" alt="About in the tablet layout"></td>
+  </tr>
+</table>
+
 ---
 
 ## Architecture
