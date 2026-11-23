@@ -5,8 +5,10 @@
 #
 # Inside it:
 #   usr/lib/idris/            the Flutter bundle (idris, lib/, data/)
-#   usr/lib/idris/extractor/  the NewPipe helper (linux/extractor) with a
-#                             Java runtime trimmed to the modules it needs
+#   extractor/                the NewPipe helper (linux/extractor) with a
+#                             Java runtime trimmed to the modules it needs,
+#                             outside usr/ so linuxdeploy leaves it alone (it
+#                             can't follow Java's own way to libjvm.so)
 #   usr/lib/                  libmpv and the libraries it needs, but not
 #                             what every desktop has (GTK, GLib, graphics,
 #                             audio): bundling those breaks themes and sound
@@ -35,8 +37,9 @@ echo "== AppDir"
 rm -rf "$APPDIR"
 mkdir -p "$APP" "$APPDIR/usr/share/applications" "$APPDIR/usr/share/icons/hicolor/256x256/apps"
 cp -r build/linux/x64/release/bundle/. "$APP/"
-mkdir -p "$APP/extractor"
-cp -r linux/extractor/build/install/idris-extractor/lib "$APP/extractor/lib"
+HELPER="$APPDIR/extractor"
+mkdir -p "$HELPER"
+cp -r linux/extractor/build/install/idris-extractor/lib "$HELPER/lib"
 
 # The Java modules the helper needs: jdeps --print-module-deps on its jars,
 # plus jdk.crypto.ec, which TLS loads at runtime (YouTube's HTTPS fails
@@ -44,7 +47,7 @@ cp -r linux/extractor/build/install/idris-extractor/lib "$APP/extractor/lib"
 jlink \
   --add-modules java.base,java.desktop,java.logging,java.net.http,java.scripting,jdk.crypto.ec,jdk.dynalink,jdk.unsupported \
   --strip-debug --no-header-files --no-man-pages --compress=2 \
-  --output "$APP/extractor/runtime"
+  --output "$HELPER/runtime"
 
 cat > "$APPDIR/usr/share/applications/idris.desktop" <<'EOF'
 [Desktop Entry]
@@ -62,7 +65,9 @@ cp assets/icon/icon.png "$APPDIR/usr/share/icons/hicolor/256x256/apps/idris.png"
 cat > "$APPDIR/AppRun" <<'EOF'
 #!/bin/sh
 # Idris's AppImage entry point: its own libraries first, then the app.
+# APPDIR tells the app where the NewPipe helper is ($APPDIR/extractor).
 HERE="$(dirname "$(readlink -f "$0")")"
+export APPDIR="${APPDIR:-$HERE}"
 export LD_LIBRARY_PATH="$HERE/usr/lib:$HERE/usr/lib/idris/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 exec "$HERE/usr/lib/idris/idris" "$@"
 EOF

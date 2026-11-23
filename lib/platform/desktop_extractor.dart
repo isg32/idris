@@ -12,8 +12,8 @@ import 'net.dart';
 /// each track waits on YouTube and not on Java starting.
 ///
 /// It speaks one JSON object per line (see Extractor.java). In the AppImage
-/// it sits beside the app as `extractor/` with its own trimmed Java runtime;
-/// a development build uses the system's `java` and the Gradle output.
+/// it's `$APPDIR/extractor`, with its own trimmed Java runtime; a
+/// development build uses the system's `java` and the Gradle output.
 class DesktopExtractor {
   DesktopExtractor._();
 
@@ -96,9 +96,14 @@ class DesktopExtractor {
   /// The Java to run and its classpath: the AppImage's bundled runtime
   /// beside the app, else (developing) the system's and Gradle's output.
   static (String, String) _locate() {
-    final here = p.dirname(Platform.resolvedExecutable);
-    final bundled = p.join(here, 'extractor');
-    if (Directory(bundled).existsSync()) {
+    // In the AppImage it's at the top ($APPDIR/extractor), where
+    // linuxdeploy leaves its Java runtime alone; beside the app otherwise.
+    final appDir = Platform.environment['APPDIR'];
+    final bundled = [
+      if (appDir != null) p.join(appDir, 'extractor'),
+      p.join(p.dirname(Platform.resolvedExecutable), 'extractor'),
+    ].firstWhere((d) => Directory(d).existsSync(), orElse: () => '');
+    if (bundled.isNotEmpty) {
       return (
         p.join(bundled, 'runtime', 'bin', 'java'),
         p.join(bundled, 'lib', '*'),
