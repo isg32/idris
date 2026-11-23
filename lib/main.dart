@@ -17,6 +17,7 @@ import 'platform/cache_manager.dart';
 import 'platform/covers.dart';
 import 'platform/local_music.dart';
 import 'platform/crash_log.dart';
+import 'platform/desktop_entry.dart';
 import 'platform/updater.dart';
 import 'features/crash_overlay.dart';
 import 'features/settings/about_page.dart';
@@ -65,6 +66,8 @@ Future<void> main() async {
     ),
   );
   unawaited(CrashLog.instance.checkLastRun());
+  // Run as an AppImage: be in the desktop's app menu.
+  if (Platform.isLinux) unawaited(registerDesktopEntry());
 }
 
 /// Doto and Inter are bundled under the SIL Open Font License.

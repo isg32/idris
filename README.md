@@ -6,7 +6,7 @@
 
 **Your mantras and calm music, from your own YouTube playlists — and nothing else.**
 
-![Version](https://img.shields.io/badge/version-2.2.0-000000?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.3.0-000000?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/isg32/idris?style=flat-square&color=000000&label=release)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-000000?style=flat-square&logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android%20%C2%B7%20Linux-000000?style=flat-square&logo=android&logoColor=white)
@@ -174,6 +174,7 @@ Checked by tests on every run:
 | `linux/` | the Linux desktop runner |
 | `linux/build_appimage.sh` | builds `Idris-x86_64.AppImage` (by hand and in CI) |
 | `lib/platform/appimage_updater.dart` | the AppImage replacing itself in place, and restarting |
+| `lib/platform/desktop_entry.dart` | the AppImage putting itself in the app menu |
 | `tool/live_playlist_test.dart` | a by-hand check against real YouTube playlists |
 
 ---
@@ -250,29 +251,42 @@ On Linux, use `Idris-x86_64.AppImage` from the same release: see [Linux (AppImag
 
 One file, for any recent x86-64 desktop Linux. It carries its own NewPipe helper (with a Java runtime trimmed to what it needs) and libmpv, and uses the desktop's own GTK, graphics and sound.
 
-**Install.** Put it somewhere it can stay and you can write to, since it updates itself in place:
+**Install**, once:
 
-```sh
-mkdir -p ~/Applications
-mv ~/Downloads/Idris-x86_64.AppImage ~/Applications/
-chmod +x ~/Applications/Idris-x86_64.AppImage
-~/Applications/Idris-x86_64.AppImage
-```
+1. Download it from the latest release into a folder you can write to and where it can stay (it updates itself in place):
+
+   ```sh
+   mkdir -p ~/Applications
+   curl -L -o ~/Applications/Idris-x86_64.AppImage \
+     https://github.com/isg32/idris/releases/latest/download/Idris-x86_64.AppImage
+   ```
+
+2. Make it executable:
+
+   ```sh
+   chmod +x ~/Applications/Idris-x86_64.AppImage
+   ```
+
+3. Run it once. From then on it's in your app launcher (wofi, rofi, fuzzel, walker, your bar's app grid), as **Idris**:
+
+   ```sh
+   ~/Applications/Idris-x86_64.AppImage
+   ```
 
 It needs a desktop with GTK 3 and a sound server (PipeWire or PulseAudio), as any recent GNOME, KDE, Hyprland or Sway setup has. If it won't start because of FUSE, install `fuse2` (Arch) or `libfuse2` (Debian/Ubuntu), or run it with `--appimage-extract-and-run`.
 
-**Add it to the app menu.** The AppImage doesn't install a launcher itself. To get one:
+**It adds itself to the app menu.** Each time it starts, it writes its launcher entry and icon (`~/.local/share/applications/com.isg32.idris.desktop`, `~/.local/share/icons/hicolor/192x192/apps/com.isg32.idris.png`), pointing at wherever the AppImage is, so app launchers (wofi, rofi, fuzzel, walker, a desktop's app grid) list Idris after its first run, and a moved AppImage is followed on the next start. An entry that's already right is left alone.
+
+Versions before 2.3.0 don't add themselves. For one of those, add the entry by hand (2.3.0 and later keep it up to date):
 
 ```sh
-~/Applications/Idris-x86_64.AppImage --appimage-extract idris.png >/dev/null
-mkdir -p ~/.local/share/icons ~/.local/share/applications
-mv squashfs-root/idris.png ~/.local/share/icons/idris.png && rm -rf squashfs-root
-cat > ~/.local/share/applications/idris.desktop <<EOF
+mkdir -p ~/.local/share/applications
+cat > ~/.local/share/applications/com.isg32.idris.desktop <<EOF
 [Desktop Entry]
 Type=Application
 Name=Idris
-Exec=$HOME/Applications/Idris-x86_64.AppImage
-Icon=$HOME/.local/share/icons/idris.png
+Exec="$HOME/Applications/Idris-x86_64.AppImage"
+Terminal=false
 Categories=AudioVideo;Audio;Player;
 StartupWMClass=com.isg32.idris
 EOF
@@ -280,7 +294,7 @@ EOF
 
 **Updates** come from the same releases as the phone's (see [Over-the-air updates](#over-the-air-updates)): a card on Home and Settings › Check for updates, then **Update**, then **Restart Idris**. The file is replaced where it is, so the launcher above keeps working.
 
-**Where things are.** The library, cached audio, covers and the updater's notes live in `~/.local/share/com.isg32.idris/`. A crash log saved from the crash popup goes to `~/Downloads`. Remove that folder and the AppImage (and the launcher, if you made one) to uninstall.
+**Where things are.** The library, cached audio, covers and the updater's notes live in `~/.local/share/com.isg32.idris/`. A crash log saved from the crash popup goes to `~/Downloads`. To uninstall, remove that folder, the AppImage, and its launcher entry and icon (the two files above).
 
 **Build it yourself** with `linux/build_appimage.sh [output dir]`, which is what CI runs. It needs the Linux build requirements above, JDK 17 (for jlink) and libmpv (`libmpv-dev` on Debian/Ubuntu), and downloads linuxdeploy once into `build/appimage-tools`. Its launcher looks in the system's libraries first and falls back to the bundled ones, so the desktop's GTK always gets its own (a bundled older library had broken GTK on Arch).
 
