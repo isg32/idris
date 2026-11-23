@@ -6,7 +6,7 @@
 
 **Your mantras and calm music, from your own YouTube playlists — and nothing else.**
 
-![Version](https://img.shields.io/badge/version-2.3.0-000000?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.4.0-000000?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/isg32/idris?style=flat-square&color=000000&label=release)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-000000?style=flat-square&logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android%20%C2%B7%20Linux-000000?style=flat-square&logo=android&logoColor=white)
@@ -34,7 +34,7 @@ Paste a playlist link once. Idris keeps it in sync, and every track it plays is 
 | --- | --- |
 | **Only your playlists** | No search, no feed, no suggestions. Idris plays the videos in the playlists you import, as audio. |
 | **No buffering the second time** | One download both plays a track and caches it. Played tracks are on the phone for good, until the cache needs the room. |
-| **Offline and private** | No account and no sign-in. Nothing is collected or sent anywhere but YouTube. |
+| **Offline and private** | No account and no sign-in. Nothing is collected or sent anywhere but YouTube, and LRCLIB for lyrics (only a song's title, artist and length). |
 | **Calm** | Veronica's design language: pure black and white, dot-matrix type, 1 px ink outlines, glass. Artwork is an experimental, optional exception. |
 
 Idris is a personal, sideloaded app, not distributed through the Play Store.
@@ -47,6 +47,7 @@ Idris is a personal, sideloaded app, not distributed through the Play Store.
 | **On this phone** | Music from folders you choose on the phone, in one list at the top of Library: titles, artists and covers read from the files, played straight from them (never cached, no network). Pull down to pick up new files; removing a folder only takes it out of Idris. Uses Android's folder picker, so no storage permission. |
 | **Home** | Recently added, recently played and your playlists. |
 | **Player** | Full screen, growing out of the mini player and shrinking back into it with a swipe down. Loop (off, playlist, one track), repeat a track ×N (3 to 1008, then stop or next), sleep timer (15 to 60 min, custom or end of track, fading out), shuffle and a reorderable queue. |
+| **Lyrics** | Synced lyrics that follow the song (the line being sung in ink, the rest faded; tap a line to go there), or plain ones, from [LRCLIB](https://lrclib.net) (free and open, no account) or an `.lrc` file beside a local song. Looked up as each song starts and kept with it, so they're there offline and never looked up twice; a song with none is tried again after a week. In the player: a Lyrics button on a phone, beside the controls on a desktop. YouTube titles are tidied into artist and title first ("Mosquito (Official Video)" is "Mosquito"); when unsure, Idris shows none rather than another song's words. |
 | **Mini player** | Docked above the tab bar and on playlist pages, as in Spotify and Apple Music. |
 | **Volume keys** | While music plays, even with the screen off or another app in front: double-tap or hold Volume up for the next track, Volume down for the previous; a single tap still changes the volume. Off in Settings › Playback. |
 | **Media controls** | Background playback with the notification, lock screen, quick-settings player and headset buttons. |
@@ -175,6 +176,7 @@ Checked by tests on every run:
 | `linux/build_appimage.sh` | builds `Idris-x86_64.AppImage` (by hand and in CI) |
 | `lib/platform/appimage_updater.dart` | the AppImage replacing itself in place, and restarting |
 | `lib/platform/desktop_entry.dart` | the AppImage putting itself in the app menu |
+| `lib/platform/lyrics.dart`, `lib/features/player/lyrics_view.dart` | lyrics: LRC, YouTube titles as songs, LRCLIB, the cache; the view in the player |
 | `tool/live_playlist_test.dart` | a by-hand check against real YouTube playlists |
 
 ---

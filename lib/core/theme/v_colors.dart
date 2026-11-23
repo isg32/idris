@@ -12,6 +12,11 @@ abstract final class VColors {
   static const Color white = Color(0xFFFFFFFF);
   static const Color transparent = Color(0x00000000);
 
+  /// All but invisible (1/255): painted under content a filter works on,
+  /// so the filter's area is the whole box and not just what's drawn
+  /// (the lyrics' edge blur measures from the box's edges).
+  static const Color unseen = Color(0x01000000);
+
   /// Floating tab bar: white at 10 %.
   static const Color glassBar = Color(0x1AFFFFFF);
 

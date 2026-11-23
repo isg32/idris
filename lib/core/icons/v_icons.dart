@@ -38,6 +38,7 @@ enum VIcon {
     'M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1M11 18h2',
   ),
   folder('M3 6h6l2 2h10v11H3z'),
+  lyrics('M4 6h11M4 10h11M4 14h7M18 7v9a2 2 0 1 1-2-2h2'),
   notCached('M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16'),
   sync('M20 11a8 8 0 0 0-14.6-4.5M4 4v3h3M4 13a8 8 0 0 0 14.6 4.5M20 20v-3h-3'),
   external(

@@ -11,6 +11,7 @@ import '../platform/cache_manager.dart';
 import '../platform/covers.dart';
 import '../platform/glyph.dart';
 import '../platform/local_music.dart';
+import '../platform/lyrics.dart';
 import '../platform/youtube.dart';
 import 'library.dart';
 import 'models.dart';
@@ -131,6 +132,31 @@ final localTracksProvider = StreamProvider<List<Track>>(
 final localCountsProvider = StreamProvider<Map<String, int>>(
   (ref) => ref.watch(localMusicProvider).watchCounts(),
 );
+
+/// Lyrics, from an .lrc beside a local file or LRCLIB, kept for offline.
+final lyricsServiceProvider = Provider<LyricsService>(
+  (ref) => throw UnimplementedError('overridden in main()'),
+);
+
+/// A track's lyrics, or null when there are none.
+final lyricsProvider = FutureProvider.family<Lyrics?, String>((
+  ref,
+  videoId,
+) async {
+  final track = await ref.watch(libraryProvider).track(videoId);
+  if (track == null) return null;
+  return ref.watch(lyricsServiceProvider).lyricsFor(track);
+});
+
+/// Whether the phone's player shows the lyrics instead of the track.
+final lyricsOpenProvider = NotifierProvider<LyricsOpen, bool>(LyricsOpen.new);
+
+class LyricsOpen extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+}
 
 /// Where the covers the user chose are kept.
 final coversProvider = Provider<Covers>((ref) => Covers());

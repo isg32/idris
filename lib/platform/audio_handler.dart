@@ -9,6 +9,7 @@ import '../data/library.dart';
 import '../data/models.dart';
 import 'cache_manager.dart';
 import 'local_music.dart';
+import 'lyrics.dart';
 import 'playback_rules.dart';
 import 'volume_keys.dart';
 import 'youtube.dart';
@@ -140,6 +141,10 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
   final Library library;
   final CacheManager cache;
 
+  /// Looks up each track's lyrics as it starts, so they're ready (and
+  /// kept for offline) before anyone opens them.
+  LyricsService? lyrics;
+
   bool _volumeSkip = true;
   bool? _remoteVolume;
   late final VolumeKeys _volumeKeys = VolumeKeys(
@@ -262,6 +267,7 @@ class IdrisAudioHandler extends BaseAudioHandler with SeekHandler {
         unawaited(library.recordPlay(t.videoId));
       }
       unawaited(cache.touch(t.videoId));
+      if (lyrics != null) unawaited(lyrics!.lyricsFor(t));
       unawaited(player.play());
     } on Object catch (e) {
       if (token != _openToken) return;

@@ -7,6 +7,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_service_mpris/audio_service_mpris.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import 'app/app.dart';
 import 'app/router.dart';
@@ -19,6 +21,7 @@ import 'platform/covers.dart';
 import 'platform/local_music.dart';
 import 'platform/crash_log.dart';
 import 'platform/desktop_entry.dart';
+import 'platform/lyrics.dart';
 import 'platform/updater.dart';
 import 'features/crash_overlay.dart';
 import 'features/settings/about_page.dart';
@@ -60,6 +63,13 @@ Future<void> main() async {
   unawaited(library.coverPaths().then(covers.tidy).catchError((Object _) {}));
   // Playback runs as a media service, so it carries on in the background.
   final handler = await initAudio(library: library, cache: cache);
+  final lyrics = LyricsService(
+    dir: () async => Directory(
+      p.join((await getApplicationSupportDirectory()).path, 'lyrics'),
+    ),
+    localUri: local.uriOf,
+  );
+  handler.lyrics = lyrics;
   final onboarded =
       (await library.db.select(library.db.prefs).get()).any(
         (p) => p.key == 'onboarded',
@@ -73,6 +83,7 @@ Future<void> main() async {
         cacheManagerProvider.overrideWithValue(cache),
         coversProvider.overrideWithValue(covers),
         localMusicProvider.overrideWithValue(local),
+        lyricsServiceProvider.overrideWithValue(lyrics),
         audioHandlerProvider.overrideWithValue(handler),
         // Over-the-air updates from GitHub Releases (Android only).
         updateDepsProvider.overrideWithValue(phoneUpdateDeps()),

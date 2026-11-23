@@ -647,6 +647,86 @@ class _VEdgeBlurState extends State<VEdgeBlur> {
   }
 }
 
+/// [child], blurred towards its top and bottom edges: strongest at each
+/// edge and easing to nothing [top] and [bottom] in from it, with no seam,
+/// so content scrolling in and out melts away (the phone's lyrics). The
+/// same shader as [VEdgeBlur], but on the child's own drawing, so the edges
+/// are the child's, wherever it is on the screen.
+class VBlurredEdges extends StatefulWidget {
+  const VBlurredEdges({
+    super.key,
+    required this.child,
+    required this.top,
+    required this.bottom,
+    this.maxRadius = 18,
+  });
+
+  final Widget child;
+
+  /// How far in from each edge the blur reaches.
+  final double top;
+  final double bottom;
+
+  /// Blur radius right at the edges.
+  final double maxRadius;
+
+  @override
+  State<VBlurredEdges> createState() => _VBlurredEdgesState();
+}
+
+class _VBlurredEdgesState extends State<VBlurredEdges> {
+  FragmentShader? _top;
+  FragmentShader? _bottom;
+
+  @override
+  void initState() {
+    super.initState();
+    if (ImageFilter.isShaderFilterSupported) {
+      VEdgeBlur._program ??= FragmentProgram.fromAsset(
+        'shaders/progressive_blur.frag',
+      );
+      VEdgeBlur._program!.then((p) {
+        if (mounted) {
+          setState(() {
+            _top = p.fragmentShader();
+            _bottom = p.fragmentShader();
+          });
+        }
+      }, onError: (Object _) {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _top?.dispose();
+    _bottom?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final top = _top, bottom = _bottom;
+    if (top == null || bottom == null) return widget.child;
+    final ratio = MediaQuery.devicePixelRatioOf(context);
+    // Uniforms 0–1 (the texture size) are set by the engine.
+    top
+      ..setFloat(2, widget.top * ratio)
+      ..setFloat(3, widget.maxRadius * ratio)
+      ..setFloat(4, 0);
+    bottom
+      ..setFloat(2, widget.bottom * ratio)
+      ..setFloat(3, widget.maxRadius * ratio)
+      ..setFloat(4, 1);
+    return ImageFiltered(
+      imageFilter: ImageFilter.shader(bottom),
+      child: ImageFiltered(
+        imageFilter: ImageFilter.shader(top),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
 /// [VEdgeBlur] behind the status bar. Page titles start 16 below the bar,
 /// where the blur is already close to nothing.
 class VStatusBarBlur extends StatelessWidget {

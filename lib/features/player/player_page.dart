@@ -21,6 +21,7 @@ import '../../data/providers.dart';
 import '../common.dart';
 import '../../platform/audio_handler.dart';
 import '../../platform/playback_rules.dart';
+import 'lyrics_view.dart';
 import 'player_sheet.dart';
 import 'player_sheets.dart';
 
@@ -205,6 +206,11 @@ class PlayerPage extends ConsumerWidget {
         ],
       ),
     ];
+    // Lyrics: beside the track on a desktop (shown unless hidden), in its
+    // place on a phone or tablet (when opened).
+    final lyricsWide = VLayout.of(context) == VLayout.desktop;
+    final lyricsToggled = ref.watch(lyricsOpenProvider);
+    final showLyrics = lyricsWide ? !lyricsToggled : lyricsToggled;
     final modes = <Widget>[
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -245,6 +251,12 @@ class PlayerPage extends ConsumerWidget {
             on: false,
             onTap: () => showQueueSheet(context, ref),
           ),
+          _Mode(
+            label: 'Lyrics',
+            icon: VIcon.lyrics,
+            on: showLyrics,
+            onTap: ref.read(lyricsOpenProvider.notifier).toggle,
+          ),
         ],
       ),
     ];
@@ -267,6 +279,60 @@ class PlayerPage extends ConsumerWidget {
         builder: (context, c) {
           final w = c.maxWidth, h = c.maxHeight;
           final gap = h * 0.022;
+          final player = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: header,
+                    ),
+                  ),
+                  SizedBox(width: w * 0.03),
+                  VTextAction(
+                    'Stop session',
+                    onTap: () async {
+                      await handler.stop();
+                      if (context.mounted) await PlayerSheet.close(context);
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: gap),
+              Expanded(
+                child: showLyrics && !lyricsWide
+                    ? LyricsView(t.videoId)
+                    : LayoutBuilder(
+                        builder: (context, cover) {
+                          final side = [
+                            cover.maxHeight,
+                            w * 0.32,
+                          ].reduce((a, b) => a < b ? a : b);
+                          return Align(
+                            alignment: Alignment.bottomLeft,
+                            child: side < 64
+                                ? const SizedBox.shrink()
+                                : TrackArt(
+                                    t.videoId,
+                                    size: side,
+                                    radius: side * 0.06,
+                                  ),
+                          );
+                        },
+                      ),
+              ),
+              SizedBox(height: gap * 1.2),
+              ...info,
+              SizedBox(height: gap),
+              ...time,
+              SizedBox(height: gap * 1.2),
+              ...transport,
+              SizedBox(height: gap * 1.2),
+              ...modes,
+            ],
+          );
           return Padding(
             padding: EdgeInsets.fromLTRB(
               w * 0.05,
@@ -274,60 +340,44 @@ class PlayerPage extends ConsumerWidget {
               w * 0.05,
               h * 0.03,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: header,
-                      ),
-                    ),
-                    SizedBox(width: w * 0.03),
-                    VTextAction(
-                      'Stop session',
-                      onTap: () async {
-                        await handler.stop();
-                        if (context.mounted) await PlayerSheet.close(context);
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: gap),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, cover) {
-                      final side = [
-                        cover.maxHeight,
-                        w * 0.32,
-                      ].reduce((a, b) => a < b ? a : b);
-                      return Align(
-                        alignment: Alignment.bottomLeft,
-                        child: side < 64
-                            ? const SizedBox.shrink()
-                            : TrackArt(
-                                t.videoId,
-                                size: side,
-                                radius: side * 0.06,
-                              ),
-                      );
-                    },
-                  ),
-                ),
-                SizedBox(height: gap * 1.2),
-                ...info,
-                SizedBox(height: gap),
-                ...time,
-                SizedBox(height: gap * 1.2),
-                ...transport,
-                SizedBox(height: gap * 1.2),
-                ...modes,
-              ],
-            ),
+            child: showLyrics && lyricsWide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(flex: 52, child: player),
+                      SizedBox(width: w * 0.04),
+                      Expanded(flex: 44, child: LyricsView(t.videoId)),
+                    ],
+                  )
+                : player,
           );
         },
+      );
+    }
+
+    if (showLyrics) {
+      return Padding(
+        padding: pad,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ...header,
+            const SizedBox(height: 16),
+            Text(
+              t.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VText.inter(15, weight: 500),
+            ),
+            Expanded(child: LyricsView(t.videoId, edgeBlur: true)),
+            // The progress bar and its line, without the big clock.
+            ...time.skip(2),
+            const SizedBox(height: 20),
+            ...transport,
+            const SizedBox(height: 24),
+            ...modes,
+          ],
+        ),
       );
     }
 
