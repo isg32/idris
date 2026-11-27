@@ -71,12 +71,16 @@ cat > "$OUT/AppRun" <<'EOF'
 # bundled ones are the fallback: the desktop's GTK must load its own
 # helpers (a newer system gdk-pixbuf breaks on an older bundled glycin),
 # and libmpv and what it needs come from the AppImage only where the
-# system has none. The app finds its own Flutter libraries by its RUNPATH.
+# system has none. The app's own libraries (usr/lib/idris/lib) come before
+# all of them: the Dart side opens SQLite by the bare name libsqlite3.so,
+# which RUNPATH doesn't cover and which a system without the -dev package
+# (Mint, Ubuntu, Debian) doesn't have, so the database never opened and no
+# window ever showed. Nothing in there is a system library GTK needs.
 # APPDIR tells it where the NewPipe helper is ($APPDIR/extractor).
 HERE="$(dirname "$(readlink -f "$0")")"
 export APPDIR="${APPDIR:-$HERE}"
 SYSTEM=/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu:/usr/lib64:/lib64:/usr/lib:/lib
-export LD_LIBRARY_PATH="$SYSTEM:$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="$HERE/usr/lib/idris/lib:$SYSTEM:$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 exec "$HERE/usr/lib/idris/idris" "$@"
 EOF
 chmod +x "$OUT/AppRun"
